@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:6000/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.ecommerce-test.alfastoreargentina.link/api'
 
 console.log('API URL:', API_URL)
 
