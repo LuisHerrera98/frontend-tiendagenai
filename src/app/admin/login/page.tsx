@@ -17,7 +17,11 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError('')
 
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD || password === 'testadmin') {
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'testadmin'
+    console.log('Admin password from env:', process.env.NEXT_PUBLIC_ADMIN_PASSWORD)
+    console.log('Final admin password:', adminPassword)
+    
+    if (password === adminPassword) {
       document.cookie = 'admin-auth=true; path=/; max-age=86400'
       router.push('/admin/dashboard')
     } else {
