@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { Size } from '@/types'
 
 export default function EditProductPage() {
   const params = useParams()
@@ -92,7 +93,7 @@ export default function EditProductPage() {
       console.log('Category sizes:', categorySizes) // Debug log
       console.log('Current product stock:', product.stock) // Debug log
       
-      const updatedStock = categorySizes.map(size => {
+      const updatedStock = categorySizes.map((size: Size) => {
         // Buscar si el producto ya tiene stock para esta talla (por nombre de talla)
         const existingProductStock = product.stock.find(s => 
           s.size_name === size.name || s.size_name === size.name.toUpperCase()
