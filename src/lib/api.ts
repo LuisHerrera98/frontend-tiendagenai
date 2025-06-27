@@ -2,7 +2,8 @@ import axios from 'axios'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.ecommerce-test.alfastoreargentina.link/api'
 
-console.log('API URL:', API_URL)
+console.log('Environment variable:', process.env.NEXT_PUBLIC_API_URL)
+console.log('Final API URL:', API_URL)
 
 export const api = axios.create({
   baseURL: API_URL,
