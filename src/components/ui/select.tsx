@@ -47,7 +47,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     }
 
     return (
-      <SelectContext.Provider value={{ value, onValueChange: handleChange, open, setOpen }}>
+      <SelectContext.Provider value={{ value, onValueChange, open, setOpen }}>
         <div className="relative">
           <select
             ref={ref}

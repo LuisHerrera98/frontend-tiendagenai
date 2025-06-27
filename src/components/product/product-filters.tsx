@@ -27,7 +27,7 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
     queryFn: () => productService.getFilters(selectedCategory),
     enabled: !!selectedCategory,
     staleTime: 0, // Force refresh to get updated data
-    cacheTime: 0, // Don't cache old data
+    gcTime: 0, // Don't cache old data
   })
 
   const handleCategoryChange = (categoryId: string) => {

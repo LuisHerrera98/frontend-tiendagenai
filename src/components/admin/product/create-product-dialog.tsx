@@ -45,10 +45,19 @@ const productSchema = z.object({
   cost: z.number().min(0, 'El costo debe ser mayor a 0'),
   price: z.number().min(0, 'El precio debe ser mayor a 0'),
   discount: z.number().min(0).max(100).optional(),
-  active: z.boolean().default(true),
+  active: z.boolean(),
 })
 
-type ProductFormData = z.infer<typeof productSchema>
+type ProductFormData = {
+  name: string
+  brand_name?: string
+  model_name?: string
+  category_id?: string
+  cost: number
+  price: number
+  discount?: number
+  active: boolean
+}
 
 interface CreateProductDialogProps {
   open: boolean

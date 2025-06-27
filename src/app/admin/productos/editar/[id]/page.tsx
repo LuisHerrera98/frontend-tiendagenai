@@ -102,7 +102,7 @@ export default function EditProductPage() {
         console.log(`Size ${size.name} - existing stock:`, existingProductStock) // Debug log
         
         return {
-          size_id: size.id,
+          size_id: size._id,
           size_name: size.name,
           quantity: existingProductStock?.quantity || 0,
           available: true
