@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { sizeService } from '@/lib/sizes'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Trash2 } from 'lucide-react'
+import { Trash2, AlertTriangle } from 'lucide-react'
 
 interface DeleteSizeDialogProps {
   open: boolean
@@ -20,23 +21,42 @@ interface DeleteSizeDialogProps {
 
 export function DeleteSizeDialog({ open, onOpenChange, size }: DeleteSizeDialogProps) {
   const queryClient = useQueryClient()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const mutation = useMutation({
     mutationFn: (id: string) => sizeService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sizes'] })
-      onOpenChange(false)
+    onSuccess: (data: any) => {
+      if (data.success && data.canDelete) {
+        // Eliminación exitosa
+        queryClient.invalidateQueries({ queryKey: ['sizes'] })
+        setErrorMessage(null)
+        onOpenChange(false)
+      } else {
+        // No se puede eliminar (productos asociados)
+        setErrorMessage(data.message)
+      }
     },
+    onError: (error: any) => {
+      // Solo errores reales del servidor/red
+      const message = error?.response?.data?.message || error?.message || 'Error de conexión al eliminar la talla'
+      setErrorMessage(message)
+    }
   })
 
   const handleDelete = () => {
     if (size) {
+      setErrorMessage(null)
       mutation.mutate(size._id)
     }
   }
 
+  const handleClose = () => {
+    setErrorMessage(null)
+    onOpenChange(false)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader className="pb-4">
           <div className="flex items-center space-x-3">
@@ -53,32 +73,50 @@ export function DeleteSizeDialog({ open, onOpenChange, size }: DeleteSizeDialogP
         </DialogHeader>
 
         <div className="py-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-sm text-red-800">
-              ¿Estás seguro de que quieres eliminar el talle <strong>"{size?.name}"</strong>?
-            </p>
-            <p className="text-xs text-red-600 mt-2">
-              Este talle será eliminado permanentemente y no podrá ser recuperado.
-            </p>
-          </div>
+          {/* Mensaje de error si existe */}
+          {errorMessage && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-yellow-800">No se puede eliminar</p>
+                  <p className="text-sm text-yellow-700 mt-1">{errorMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mensaje de confirmación normal */}
+          {!errorMessage && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800">
+                ¿Estás seguro de que quieres eliminar el talle <strong>"{size?.name}"</strong>?
+              </p>
+              <p className="text-xs text-red-600 mt-2">
+                Este talle será eliminado permanentemente y no podrá ser recuperado.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
           <Button 
             type="button" 
             variant="outline" 
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             className="px-4 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
           >
-            Cancelar
+            {errorMessage ? 'Cerrar' : 'Cancelar'}
           </Button>
-          <Button 
-            onClick={handleDelete}
-            disabled={mutation.isPending}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white"
-          >
-            {mutation.isPending ? 'Eliminando...' : 'Eliminar Talle'}
-          </Button>
+          {!errorMessage && (
+            <Button 
+              onClick={handleDelete}
+              disabled={mutation.isPending}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white"
+            >
+              {mutation.isPending ? 'Eliminando...' : 'Eliminar Talle'}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

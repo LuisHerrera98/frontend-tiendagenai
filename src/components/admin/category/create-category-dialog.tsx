@@ -59,7 +59,7 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Crear Nueva Categoría</DialogTitle>
           <DialogDescription>
@@ -76,7 +76,7 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
                 <FormItem>
                   <FormLabel>Nombre de la Categoría</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nombre de la categoría" />
+                    <Input {...field} placeholder="Nombre de la categoría" autoComplete="off" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

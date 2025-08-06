@@ -10,7 +10,9 @@ import {
   Ruler, 
   ShoppingCart,
   Users,
-  LogOut 
+  LogOut,
+  Grid3X3,
+  UserCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -20,11 +22,13 @@ interface AdminSidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { name: 'Inicio', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Productos', href: '/admin/productos', icon: Package },
   { name: 'Categorías', href: '/admin/categorias', icon: Tags },
   { name: 'Tallas', href: '/admin/tallas', icon: Ruler },
   { name: 'Marcas', href: '/admin/marcas', icon: Users },
+  { name: 'Tipos', href: '/admin/tipos', icon: Grid3X3 },
+  { name: 'Géneros', href: '/admin/generos', icon: UserCheck },
   { name: 'Ventas', href: '/admin/ventas', icon: ShoppingCart },
 ]
 
@@ -32,8 +36,9 @@ export function AdminSidebar({ isOpen = true, onClose }: AdminSidebarProps) {
   const pathname = usePathname()
 
   const handleLogout = () => {
-    document.cookie = 'admin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    window.location.href = '/admin/login'
+    localStorage.clear()
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    window.location.href = '/auth/login'
   }
 
   const handleLinkClick = () => {

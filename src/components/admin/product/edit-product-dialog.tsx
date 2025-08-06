@@ -4,12 +4,18 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { productService } from '@/lib/products'
 import { categoryService } from '@/lib/categories'
-import { Product } from '@/types'
+import { sizeService } from '@/lib/sizes'
+import { brandService } from '@/lib/brands'
+import { typeService } from '@/lib/types'
+import { genderService } from '@/lib/genders'
+import { Product, ProductStock } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
+import { CustomSelect } from '@/components/ui/custom-select'
 import {
   Dialog,
   DialogContent,
@@ -29,19 +35,88 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     name: '',
     price: '',
     cost: '',
-    model_name: '',
-    brand_name: '',
+    type_id: '',
+    brand_id: '',
+    gender_id: '',
     category_id: '',
     active: true,
-    discount: ''
+    discount: '',
   })
+  const [productSizes, setProductSizes] = useState<{[key: string]: {name: string, quantity: number, selected: boolean}}>({})
 
   const queryClient = useQueryClient()
+
+  const handleSizeToggle = (sizeId: string) => {
+    const size = sizes?.find(s => s._id === sizeId)
+    if (!size) return
+
+    setProductSizes(prev => {
+      const newSizes = { ...prev }
+      
+      if (newSizes[sizeId]) {
+        // Remove size
+        delete newSizes[sizeId]
+      } else {
+        // Add size with default quantity
+        newSizes[sizeId] = {
+          name: size.name,
+          quantity: 1,
+          selected: true
+        }
+      }
+      
+      return newSizes
+    })
+  }
+
+  const handleQuantityChange = (sizeId: string, value: string) => {
+    console.log('handleQuantityChange called with sizeId:', sizeId, 'value:', value)
+    const numericValue = value === '' ? 0 : Math.max(0, parseInt(value) || 0)
+    
+    setProductSizes(prev => {
+      console.log('Previous productSizes:', prev)
+      const newSizes = {
+        ...prev,
+        [sizeId]: {
+          ...prev[sizeId],
+          quantity: numericValue
+        }
+      }
+      console.log('New productSizes:', newSizes)
+      return newSizes
+    })
+  }
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getAll,
   })
+
+  const { data: sizes } = useQuery({
+    queryKey: ['sizes', formData.category_id],
+    queryFn: () => formData.category_id ? sizeService.getByCategory(formData.category_id) : [],
+    enabled: !!formData.category_id,
+  })
+
+  const { data: brands, isLoading: brandsLoading, error: brandsError } = useQuery({
+    queryKey: ['brands'],
+    queryFn: brandService.getAll,
+  })
+
+  const { data: types, isLoading: typesLoading, error: typesError } = useQuery({
+    queryKey: ['types'],
+    queryFn: typeService.getAll,
+  })
+
+  const { data: genders, isLoading: gendersLoading, error: gendersError } = useQuery({
+    queryKey: ['genders'],
+    queryFn: genderService.getAll,
+  })
+
+  // Debug logging
+  console.log('Brands:', brands, 'Loading:', brandsLoading, 'Error:', brandsError)
+  console.log('Types:', types, 'Loading:', typesLoading, 'Error:', typesError)
+  console.log('Genders:', genders, 'Loading:', gendersLoading, 'Error:', gendersError)
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
@@ -58,28 +133,71 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
         name: product.name || '',
         price: product.price?.toString() || '',
         cost: product.cost?.toString() || '',
-        model_name: product.model_name || '',
-        brand_name: product.brand_name || '',
+        type_id: product.type_id || '',
+        brand_id: product.brand_id || '',
         category_id: product.category_id || '',
         active: product.active ?? true,
-        discount: product.discount?.toString() || '0'
+        discount: product.discount?.toString() || '0',
+        gender_id: product.gender_id || ''
       })
+      
+      // Set existing stock data ONLY on initial load
+      if (product.stock && product.stock.length > 0) {
+        const initialSizes: {[key: string]: {name: string, quantity: number, selected: boolean}} = {}
+        product.stock.forEach(s => {
+          initialSizes[s.size_id] = {
+            name: s.size_name,
+            quantity: s.quantity,
+            selected: true
+          }
+        })
+        setProductSizes(initialSizes)
+      } else {
+        setProductSizes({})
+      }
     }
-  }, [product])
+  }, [product?._id]) // Only run when product ID changes, not on every product update
+
+  // Clean up invalid sizes when category changes
+  useEffect(() => {
+    if (!sizes || !formData.category_id) return
+    
+    const allAvailableSizes = sizes.map(s => s._id)
+    
+    setProductSizes(prev => {
+      const cleanedSizes = { ...prev }
+      Object.keys(cleanedSizes).forEach(sizeId => {
+        if (!allAvailableSizes.includes(sizeId)) {
+          delete cleanedSizes[sizeId]
+        }
+      })
+      return cleanedSizes
+    })
+  }, [formData.category_id])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!product) return
 
+    // Create stock array from productSizes
+    const stockArray: ProductStock[] = Object.entries(productSizes).map(([sizeId, sizeData]) => ({
+      size_id: sizeId,
+      size_name: sizeData.name,
+      quantity: sizeData.quantity,
+      available: true
+    }))
+
     const updateData = {
       name: formData.name,
       price: parseFloat(formData.price),
       cost: parseFloat(formData.cost),
-      model_name: formData.model_name,
-      brand_name: formData.brand_name,
+      type_id: formData.type_id,
+      brand_id: formData.brand_id,
       category_id: formData.category_id,
       active: formData.active,
-      discount: parseFloat(formData.discount)
+      discount: parseFloat(formData.discount),
+      gender_id: formData.gender_id,
+      stock: stockArray
     }
 
     updateMutation.mutate({ id: product._id, data: updateData })
@@ -102,42 +220,57 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                autoComplete="off"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Categoría</Label>
-              <select
-                id="category"
+              <CustomSelect
+                options={[
+                  { value: '', label: 'Seleccionar categoría' },
+                  ...(categories?.map(category => ({
+                    value: category._id,
+                    label: category.name
+                  })) || [])
+                ]}
                 value={formData.category_id}
-                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
-              >
-                <option value="">Seleccionar categoría</option>
-                {categories?.map((category) => (
-                  <option key={category._id} value={category._id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="brand_name">Marca</Label>
-              <Input
-                id="brand_name"
-                value={formData.brand_name}
-                onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, category_id: value })}
+                placeholder="Seleccionar categoría"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="model_name">Modelo</Label>
-              <Input
-                id="model_name"
-                value={formData.model_name}
-                onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
+              <Label htmlFor="brand_id">Marca</Label>
+              <CustomSelect
+                options={[
+                  { value: '', label: brandsLoading ? 'Cargando marcas...' : 'Seleccionar marca' },
+                  ...(brands?.map(brand => ({
+                    value: brand._id,
+                    label: brand.name
+                  })) || [])
+                ]}
+                value={formData.brand_id}
+                onChange={(value) => setFormData({ ...formData, brand_id: value })}
+                placeholder="Seleccionar marca"
+                disabled={brandsLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type_id">Tipo</Label>
+              <CustomSelect
+                options={[
+                  { value: '', label: typesLoading ? 'Cargando tipos...' : 'Seleccionar tipo' },
+                  ...(types?.map(type => ({
+                    value: type._id,
+                    label: type.name
+                  })) || [])
+                ]}
+                value={formData.type_id}
+                onChange={(value) => setFormData({ ...formData, type_id: value })}
+                placeholder="Seleccionar tipo"
+                disabled={typesLoading}
               />
             </div>
 
@@ -177,6 +310,22 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="gender_id">Género</Label>
+              <CustomSelect
+                options={[
+                  { value: '', label: 'Seleccionar género' },
+                  ...(genders?.map(gender => ({
+                    value: gender._id,
+                    label: gender.name
+                  })) || [])
+                ]}
+                value={formData.gender_id}
+                onChange={(value) => setFormData({ ...formData, gender_id: value })}
+                placeholder="Seleccionar género"
+              />
+            </div>
+
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                 <div>
@@ -194,6 +343,47 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
                   />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Sizes and Stock Management */}
+          <div className="space-y-4">
+            <Label className="text-base font-medium">Talles y Stock</Label>
+            <div className="space-y-3 max-h-40 overflow-y-auto">
+              {!formData.category_id ? (
+                <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
+                  Selecciona una categoría para ver los talles disponibles
+                </p>
+              ) : sizes?.length === 0 ? (
+                <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
+                  No hay talles disponibles para esta categoría
+                </p>
+              ) : (
+                sizes?.map((size) => (
+                  <div key={size._id} className={`flex items-start space-x-3 p-3 border rounded transition-colors ${productSizes[size._id] ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50'}`}>
+                    <Checkbox
+                      checked={!!productSizes[size._id]}
+                      onCheckedChange={() => handleSizeToggle(size._id)}
+                      className="h-5 w-5 mt-0.5"
+                    />
+                    <Label className="flex-1 cursor-pointer leading-relaxed" onClick={() => handleSizeToggle(size._id)}>{size.name}</Label>
+                    {productSizes[size._id] && (
+                      <div className="flex items-center space-x-2">
+                        <Label className="text-sm">Cantidad:</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={productSizes[size._id]?.quantity || ''}
+                          onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                          onChange={(e) => handleQuantityChange(size._id, e.target.value)}
+                          placeholder="0"
+                          className="w-20"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

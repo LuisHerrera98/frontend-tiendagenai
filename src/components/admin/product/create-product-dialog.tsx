@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -8,12 +8,18 @@ import { z } from 'zod'
 import { productService } from '@/lib/products'
 import { categoryService } from '@/lib/categories'
 import { sizeService } from '@/lib/sizes'
+import { brandService } from '@/lib/brands'
+import { typeService } from '@/lib/types'
+import { genderService } from '@/lib/genders'
 import { CreateProductDto } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { CustomSelect } from '@/components/ui/custom-select'
+import { Upload, X } from 'lucide-react'
+import Image from 'next/image'
 import {
   Dialog,
   DialogContent,
@@ -21,13 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -39,24 +38,26 @@ import {
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
-  brand_name: z.string().optional(),
-  model_name: z.string().optional(),
+  brand_id: z.string().optional(),
+  type_id: z.string().optional(),
   category_id: z.string().optional(),
   cost: z.number().min(0, 'El costo debe ser mayor a 0'),
   price: z.number().min(0, 'El precio debe ser mayor a 0'),
   discount: z.number().min(0).max(100).optional(),
   active: z.boolean(),
+  gender_id: z.string().optional(),
 })
 
 type ProductFormData = {
   name: string
-  brand_name?: string
-  model_name?: string
+  brand_id?: string
+  type_id?: string
   category_id?: string
   cost: number
   price: number
   discount?: number
   active: boolean
+  gender_id?: string
 }
 
 interface CreateProductDialogProps {
@@ -74,12 +75,14 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: '',
-      brand_name: '',
-      model_name: '',
-      cost: 0,
-      price: 0,
-      discount: 0,
+      brand_id: '',
+      type_id: '',
+      category_id: '',
+      cost: '' as any,
+      price: '' as any,
+      discount: '' as any,
       active: true,
+      gender_id: '',
     },
   })
 
@@ -88,10 +91,34 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
     queryFn: categoryService.getAll,
   })
 
+  const selectedCategoryId = form.watch('category_id')
+  
   const { data: sizes } = useQuery({
-    queryKey: ['sizes'],
-    queryFn: sizeService.getAll,
+    queryKey: ['sizes', selectedCategoryId],
+    queryFn: () => selectedCategoryId ? sizeService.getByCategory(selectedCategoryId) : [],
+    enabled: !!selectedCategoryId,
   })
+
+  const { data: brands } = useQuery({
+    queryKey: ['brands'],
+    queryFn: brandService.getAll,
+  })
+
+  const { data: types } = useQuery({
+    queryKey: ['types'],
+    queryFn: typeService.getAll,
+  })
+
+  const { data: genders } = useQuery({
+    queryKey: ['genders'],
+    queryFn: genderService.getAll,
+  })
+
+  // Limpiar talles seleccionados cuando cambie la categoría
+  useEffect(() => {
+    setSelectedSizes([])
+    setSizeQuantities({})
+  }, [selectedCategoryId])
 
   const mutation = useMutation({
     mutationFn: ({ productData, images }: { productData: CreateProductDto; images: File[] }) => 
@@ -104,29 +131,31 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       setSelectedSizes([])
       setSizeQuantities({})
     },
+    onError: (error) => {
+      console.error('Error creating product:', error)
+      // Aquí podrías mostrar un toast o mensaje de error al usuario
+    },
   })
 
   const onSubmit = (data: ProductFormData) => {
-    console.log('Form data:', data)
-    console.log('Selected sizes:', selectedSizes)
-    console.log('Size quantities:', sizeQuantities)
-    console.log('Selected images:', selectedImages)
-
     const stock = selectedSizes.map(sizeId => {
       const size = sizes?.find(s => s._id === sizeId)
       return {
         size_id: sizeId,
         size_name: size?.name || '',
-        quantity: sizeQuantities[sizeId] || 0,
+        quantity: typeof sizeQuantities[sizeId] === 'string' ? parseInt(sizeQuantities[sizeId]) || 0 : sizeQuantities[sizeId] || 0,
+        available: true,
       }
     })
 
     const productData: CreateProductDto = {
       ...data,
+      cost: typeof data.cost === 'string' ? parseFloat(data.cost) || 0 : data.cost,
+      price: typeof data.price === 'string' ? parseFloat(data.price) || 0 : data.price,
+      discount: typeof data.discount === 'string' ? parseFloat(data.discount) || 0 : data.discount,
       stock,
     }
-
-    console.log('Product data to send:', productData)
+    
     mutation.mutate({ productData, images: selectedImages })
   }
 
@@ -137,7 +166,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
         : [...prev, sizeId]
       
       if (!prev.includes(sizeId)) {
-        setSizeQuantities(prev => ({ ...prev, [sizeId]: 1 }))
+        setSizeQuantities(prev => ({ ...prev, [sizeId]: '' as any }))
       } else {
         setSizeQuantities(prev => {
           const updated = { ...prev }
@@ -150,18 +179,43 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
     })
   }
 
-  const handleQuantityChange = (sizeId: string, quantity: number) => {
-    setSizeQuantities(prev => ({ ...prev, [sizeId]: Math.max(0, quantity) }))
+  const handleQuantityChange = (sizeId: string, value: string) => {
+    setSizeQuantities(prev => ({ ...prev, [sizeId]: value === '' ? '' : Math.max(0, parseInt(value) || 0) }))
+  }
+
+  const handleClearForm = () => {
+    form.reset({
+      name: '',
+      brand_id: '',
+      type_id: '',
+      category_id: '',
+      cost: '' as any,
+      price: '' as any,
+      discount: '' as any,
+      active: true,
+      gender_id: '',
+    })
+    setSelectedImages([])
+    setSelectedSizes([])
+    setSizeQuantities({})
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
-          <DialogTitle>Crear Nuevo Producto</DialogTitle>
-          <DialogDescription>
-            Completa la información del producto para agregarlo al inventario.
-          </DialogDescription>
+          <div className="flex justify-between items-center">
+            <DialogTitle>Crear Producto</DialogTitle>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm"
+              onClick={handleClearForm}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              Limpiar campos
+            </Button>
+          </div>
         </DialogHeader>
 
         <Form {...form}>
@@ -174,7 +228,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   <FormItem>
                     <FormLabel>Nombre del Producto</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Nombre del producto" />
+                      <Input {...field} placeholder="Nombre del producto" autoComplete="off" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -183,12 +237,23 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
 
               <FormField
                 control={form.control}
-                name="brand_name"
+                name="brand_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Marca</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Marca del producto" />
+                      <CustomSelect
+                        options={[
+                          { value: '', label: 'Seleccionar marca' },
+                          ...(brands?.map(brand => ({
+                            value: brand._id,
+                            label: brand.name
+                          })) || [])
+                        ]}
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        placeholder="Seleccionar marca"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -199,12 +264,23 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="model_name"
+                name="type_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Modelo</FormLabel>
+                    <FormLabel>Tipo</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Modelo del producto" />
+                      <CustomSelect
+                        options={[
+                          { value: '', label: 'Seleccionar tipo' },
+                          ...(types?.map(type => ({
+                            value: type._id,
+                            label: type.name
+                          })) || [])
+                        ]}
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        placeholder="Seleccionar tipo"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -217,20 +293,45 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoría</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar categoría" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories?.map((category) => (
-                          <SelectItem key={category._id} value={category._id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <CustomSelect
+                        options={[
+                          { value: '', label: 'Selecciona una categoría' },
+                          ...(categories?.map(category => ({
+                            value: category._id,
+                            label: category.name
+                          })) || [])
+                        ]}
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        placeholder="Selecciona una categoría"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gender_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Género</FormLabel>
+                    <FormControl>
+                      <CustomSelect
+                        options={[
+                          { value: '', label: 'Seleccionar género' },
+                          ...(genders?.map(gender => ({
+                            value: gender._id,
+                            label: gender.name
+                          })) || [])
+                        ]}
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        placeholder="Seleccionar género"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -249,7 +350,11 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                         type="number" 
                         step="0.01"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(value === '' ? '' : parseFloat(value) || 0)
+                        }}
                         placeholder="0.00" 
                       />
                     </FormControl>
@@ -269,7 +374,11 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                         type="number" 
                         step="0.01"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(value === '' ? '' : parseFloat(value) || 0)
+                        }}
                         placeholder="0.00" 
                       />
                     </FormControl>
@@ -290,8 +399,12 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                         min="0" 
                         max="100"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        placeholder="0" 
+                        onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(value === '' ? '' : parseFloat(value) || 0)
+                        }}
+                        placeholder="0%" 
                       />
                     </FormControl>
                     <FormMessage />
@@ -304,63 +417,116 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
               control={form.control}
               name="active"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-3 border rounded bg-gray-50">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      className="h-5 w-5 mt-0.5"
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>Producto activo</FormLabel>
+                    <FormLabel className="cursor-pointer">Producto activo</FormLabel>
+                    <p className="text-xs text-gray-600">El producto estará visible en la tienda</p>
                   </div>
                 </FormItem>
               )}
             />
 
             <div>
-              <Label>Imágenes del Producto</Label>
-              <Input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || [])
-                  setSelectedImages(files.slice(0, 4))
-                }}
-                className="mt-1"
-              />
-              {selectedImages.length > 0 && (
-                <p className="text-sm text-gray-600 mt-1">
-                  {selectedImages.length} imagen(es) seleccionada(s)
-                </p>
-              )}
+              <Label className="text-base font-medium">Imágenes del Producto</Label>
+              <div className="mt-2">
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                >
+                  <Upload className="mx-auto h-6 w-6 text-gray-400 mb-1" />
+                  <p className="text-sm text-gray-600">Seleccionar imágenes</p>
+                  <p className="text-xs text-gray-500">Máximo 4 imágenes</p>
+                </div>
+                <input
+                  id="image-upload"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || [])
+                    setSelectedImages(files.slice(0, 4))
+                    // Reset input value to allow re-selecting same files
+                    e.target.value = ''
+                  }}
+                  className="hidden"
+                />
+                {selectedImages.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      {selectedImages.length} imagen(es) seleccionada(s):
+                    </p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {selectedImages.map((file, index) => (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square relative overflow-hidden rounded-lg border">
+                            <Image
+                              src={URL.createObjectURL(file)}
+                              alt={`Preview ${index + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedImages(prev => prev.filter((_, i) => i !== index))
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
               <Label className="text-base font-medium">Tallas y Stock</Label>
               <div className="mt-2 space-y-3 max-h-40 overflow-y-auto">
-                {sizes?.map((size) => (
-                  <div key={size._id} className="flex items-center space-x-3 p-2 border rounded">
-                    <Checkbox
-                      checked={selectedSizes.includes(size._id)}
-                      onCheckedChange={() => handleSizeToggle(size._id)}
-                    />
-                    <Label className="flex-1">{size.name}</Label>
-                    {selectedSizes.includes(size._id) && (
-                      <div className="flex items-center space-x-2">
-                        <Label className="text-sm">Cantidad:</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={sizeQuantities[size._id] || 0}
-                          onChange={(e) => handleQuantityChange(size._id, parseInt(e.target.value) || 0)}
-                          className="w-20"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {!selectedCategoryId ? (
+                  <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
+                    Selecciona una categoría para ver las tallas disponibles
+                  </p>
+                ) : sizes?.length === 0 ? (
+                  <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
+                    No hay tallas disponibles para esta categoría
+                  </p>
+                ) : (
+                  sizes?.map((size) => (
+                    <div key={size._id} className={`flex items-start space-x-3 p-3 border rounded transition-colors ${selectedSizes.includes(size._id) ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50'}`}>
+                      <Checkbox
+                        checked={selectedSizes.includes(size._id)}
+                        onCheckedChange={() => handleSizeToggle(size._id)}
+                        className="h-5 w-5 mt-0.5"
+                      />
+                      <Label className="flex-1 cursor-pointer leading-relaxed" onClick={() => handleSizeToggle(size._id)}>{size.name}</Label>
+                      {selectedSizes.includes(size._id) && (
+                        <div className="flex items-center space-x-2">
+                          <Label className="text-sm">Cantidad:</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={sizeQuantities[size._id] || ''}
+                            onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                            onChange={(e) => handleQuantityChange(size._id, e.target.value)}
+                            placeholder="1"
+                            className="w-20"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

@@ -80,38 +80,44 @@ export function ProductCard({ product }: ProductCardProps) {
             {product.discount > 0 ? (
               <>
                 <span className="text-sm sm:text-base font-bold text-green-600">
-                  ${finalPrice.toFixed(2)}
+                  ${Math.floor(finalPrice) === finalPrice ? finalPrice : finalPrice.toFixed(2)}
                 </span>
                 <span className="text-xs text-gray-500 line-through">
-                  ${product.price.toFixed(2)}
+                  ${Math.floor(product.price) === product.price ? product.price : product.price.toFixed(2)}
                 </span>
               </>
             ) : (
               <span className="text-sm sm:text-base font-bold">
-                ${product.price.toFixed(2)}
+                ${Math.floor(product.price) === product.price ? product.price : product.price.toFixed(2)}
               </span>
             )}
           </div>
           
-          {/* Stock Info - Simplified for mobile */}
-          <div className="text-xs text-gray-500">
-            <span>Stock: {totalStock}</span>
-            {product.stock && product.stock.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-0.5">
+          {/* Available Sizes */}
+          {product.stock && product.stock.filter(s => s.quantity > 0).length > 0 && (
+            <div className="mt-1">
+              <p className="text-xs text-green-700 mb-0.5">Talles disponibles</p>
+              <div className="flex flex-wrap gap-1">
                 {product.stock
                   .filter(s => s.quantity > 0)
-                  .slice(0, 2) // Show max 2 sizes to save space
+                  .sort((a, b) => {
+                    // Sort sizes in a logical order
+                    const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+                    const aIndex = sizeOrder.indexOf(a.size_name);
+                    const bIndex = sizeOrder.indexOf(b.size_name);
+                    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+                    if (aIndex !== -1) return -1;
+                    if (bIndex !== -1) return 1;
+                    return a.size_name.localeCompare(b.size_name);
+                  })
                   .map((stock, index) => (
                     <Badge key={index} variant="outline" className="text-xs py-0 px-1 h-4">
                       {stock.size_name}
                     </Badge>
                   ))}
-                {product.stock.filter(s => s.quantity > 0).length > 2 && (
-                  <span className="text-xs text-gray-400">+{product.stock.filter(s => s.quantity > 0).length - 2}</span>
-                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
           
           {/* Add to Cart Button */}
           <Button 

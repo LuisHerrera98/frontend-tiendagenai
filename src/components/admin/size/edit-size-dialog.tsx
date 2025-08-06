@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { sizeService } from '@/lib/sizes'
 import { categoryService } from '@/lib/categories'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CustomSelect } from '@/components/ui/custom-select'
 import {
   Dialog,
   DialogContent,
@@ -24,11 +25,8 @@ interface EditSizeDialogProps {
 export function EditSizeDialog({ open, onOpenChange, size }: EditSizeDialogProps) {
   const [name, setName] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [selectedCategoryName, setSelectedCategoryName] = useState('')
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [errors, setErrors] = useState({ name: '', category_id: '' })
   
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
 
   const { data: categories } = useQuery({
@@ -45,39 +43,17 @@ export function EditSizeDialog({ open, onOpenChange, size }: EditSizeDialogProps
       // Reset form
       setName('')
       setCategoryId('')
-      setSelectedCategoryName('')
-      setIsDropdownOpen(false)
       setErrors({ name: '', category_id: '' })
     },
   })
 
   // Load size data when size prop changes
   useEffect(() => {
-    if (size && categories) {
+    if (size) {
       setName(size.name || '')
       setCategoryId(size.category_id || '')
-      const category = categories.find(cat => cat._id === size.category_id)
-      setSelectedCategoryName(category?.name || '')
     }
-  }, [size, categories])
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const handleCategorySelect = (categoryId: string, categoryName: string) => {
-    setCategoryId(categoryId)
-    setSelectedCategoryName(categoryName)
-    setIsDropdownOpen(false)
-  }
+  }, [size])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -121,46 +97,22 @@ export function EditSizeDialog({ open, onOpenChange, size }: EditSizeDialogProps
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2" ref={dropdownRef}>
+          <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">
               Categoría
             </Label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <span className={selectedCategoryName ? 'text-gray-900' : 'text-gray-500'}>
-                  {selectedCategoryName || 'Seleccionar categoría'}
-                </span>
-                <svg 
-                  className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {isDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg">
-                  <div className="max-h-60 overflow-auto py-1">
-                    {categories?.map((category) => (
-                      <button
-                        key={category._id}
-                        type="button"
-                        onClick={() => handleCategorySelect(category._id, category.name)}
-                        className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <CustomSelect
+              options={[
+                { value: '', label: 'Seleccionar categoría' },
+                ...(categories?.map(category => ({
+                  value: category._id,
+                  label: category.name
+                })) || [])
+              ]}
+              value={categoryId}
+              onChange={(value) => setCategoryId(value)}
+              placeholder="Seleccionar categoría"
+            />
             {errors.category_id && (
               <p className="text-sm text-red-600">{errors.category_id}</p>
             )}
@@ -180,6 +132,7 @@ export function EditSizeDialog({ open, onOpenChange, size }: EditSizeDialogProps
                 !categoryId ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               disabled={!categoryId}
+              autoComplete="off"
             />
             {errors.name && (
               <p className="text-sm text-red-600">{errors.name}</p>

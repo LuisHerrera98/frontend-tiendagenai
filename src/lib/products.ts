@@ -10,8 +10,11 @@ export const productService = {
     if (filters.brandName) params.append('brandName', filters.brandName)
     if (filters.modelName) params.append('modelName', filters.modelName)
     if (filters.sizeName) params.append('sizeName', filters.sizeName)
+    if (filters.name) params.append('name', filters.name)
+    if (filters.gender) params.append('gender', filters.gender)
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.showAll) params.append('showAll', filters.showAll.toString())
 
     const response = await api.get(`/product/search/filtered?${params.toString()}`)
     return response.data
@@ -35,8 +38,8 @@ export const productService = {
     Object.entries(productData).forEach(([key, value]) => {
       if (key === 'stock') {
         formData.append(key, JSON.stringify(value))
-      } else {
-        formData.append(key, value?.toString() || '')
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, value.toString())
       }
     })
     

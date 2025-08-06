@@ -1,3 +1,6 @@
+/* Import custom select styles */
+@import '../styles/select-overrides.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -1,27 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Check if the request is for admin routes
-  if (pathname.startsWith('/admin')) {
-    // Check if user is authenticated (has admin session)
-    const adminAuth = request.cookies.get('admin-auth')?.value
-
-    // If not authenticated and not on login page, redirect to login
-    if (!adminAuth && pathname !== '/admin/login') {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
+  const { pathname, hostname } = request.nextUrl
+  const authToken = request.cookies.get('auth_token')?.value
+  
+  // Extraer el subdominio
+  const getSubdomain = (host: string) => {
+    const parts = host.split('.')
+    // Si tiene al menos 3 partes (subdomain.domain.com), el primero es el subdominio
+    if (parts.length >= 3) {
+      const possibleSubdomain = parts[0]
+      // Ignorar www y api
+      if (possibleSubdomain !== 'www' && possibleSubdomain !== 'api') {
+        return possibleSubdomain
+      }
     }
-
-    // If authenticated and on login page, redirect to dashboard
-    if (adminAuth && pathname === '/admin/login') {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-    }
+    return null
   }
 
-  return NextResponse.next()
+  const subdomain = getSubdomain(hostname)
+  
+  // RUTAS PÚBLICAS (sin subdominio)
+  if (!subdomain) {
+    // Admin panel - requiere autenticación pero NO subdominio
+    if (pathname.startsWith('/admin')) {
+      if (!authToken && pathname !== '/admin/login') {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
+      if (authToken && pathname === '/admin/login') {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      }
+      return NextResponse.next()
+    }
+
+    // Rutas públicas permitidas
+    if (pathname.startsWith('/auth') || 
+        pathname.startsWith('/api') || 
+        pathname.startsWith('/landing') ||
+        pathname === '/') {
+      // Raíz redirige a landing
+      if (pathname === '/') {
+        return NextResponse.redirect(new URL('/landing', request.url))
+      }
+      return NextResponse.next()
+    }
+    
+    // Cualquier otra ruta sin subdominio → landing
+    return NextResponse.redirect(new URL('/landing', request.url))
+  }
+
+  // CON SUBDOMINIO - Es una tienda pública
+  // Redirigir al storefront público
+  if (pathname === '/' || pathname === '') {
+    // Aquí mostrará la tienda pública del subdominio
+    return NextResponse.rewrite(new URL('/store', request.url))
+  }
+
+  // Agregar el subdominio a los headers
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-tenant-subdomain', subdomain)
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 export const config = {
-  matcher: ['/admin/:path*']
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ],
 }

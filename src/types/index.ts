@@ -3,12 +3,13 @@ export interface Product {
   name: string
   code: string
   category_id?: string
-  model_name?: string
-  brand_name?: string
+  type_id?: string
+  brand_id?: string
   cost: number
   price: number
   discount: number
   active: boolean
+  gender_id?: string
   images: ProductImage[]
   stock: ProductStock[]
   createdAt: string
@@ -70,6 +71,7 @@ export interface CreateProductDto {
   price: number
   discount?: number
   active?: boolean
+  gender?: 'hombre' | 'mujer' | 'unisex'
   stock: Omit<ProductStock, 'available'>[]
 }
 
@@ -82,6 +84,7 @@ export interface UpdateProductDto {
   price?: number
   discount?: number
   active?: boolean
+  gender?: 'hombre' | 'mujer' | 'unisex'
   stock?: ProductStock[]
   images?: ProductImage[]
 }
@@ -91,8 +94,11 @@ export interface ProductFilters {
   brandName?: string
   modelName?: string
   sizeName?: string
+  name?: string
+  gender?: 'hombre' | 'mujer' | 'unisex'
   page?: number
   limit?: number
+  showAll?: boolean // Para mostrar productos inactivos en admin
 }
 
 export interface ProductsResponse {
@@ -107,4 +113,49 @@ export interface FiltersResponse {
   brands: string[]
   models: string[]
   sizes: string[]
+}
+
+export interface Brand {
+  _id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Type {
+  _id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateBrandDto {
+  name: string
+}
+
+export interface UpdateBrandDto {
+  name?: string
+}
+
+export interface CreateTypeDto {
+  name: string
+}
+
+export interface UpdateTypeDto {
+  name?: string
+}
+
+export interface Gender {
+  _id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateGenderDto {
+  name: string
+}
+
+export interface UpdateGenderDto {
+  name?: string
 }

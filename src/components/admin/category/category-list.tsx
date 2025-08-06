@@ -1,9 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { categoryService } from '@/lib/categories'
+import { Category } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2 } from 'lucide-react'
+import { EditCategoryDialog } from './edit-category-dialog'
+import { DeleteCategoryDialog } from './delete-category-dialog'
 import {
   Table,
   TableBody,
@@ -14,6 +18,8 @@ import {
 } from '@/components/ui/table'
 
 export function CategoryList() {
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null)
   const { data: categories, isLoading, error } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getAll,
@@ -37,6 +43,7 @@ export function CategoryList() {
   }
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -50,10 +57,18 @@ export function CategoryList() {
             <TableCell className="font-medium">{category.name}</TableCell>
             <TableCell>
               <div className="flex space-x-2">
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setEditingCategory(category)}
+                >
                   <Pencil className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setDeletingCategory(category)}
+                >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -62,5 +77,20 @@ export function CategoryList() {
         ))}
       </TableBody>
     </Table>
+
+    {/* Edit Category Dialog */}
+    <EditCategoryDialog
+      open={!!editingCategory}
+      onOpenChange={(open) => !open && setEditingCategory(null)}
+      category={editingCategory}
+    />
+
+    {/* Delete Category Dialog */}
+    <DeleteCategoryDialog
+      open={!!deletingCategory}
+      onOpenChange={(open) => !open && setDeletingCategory(null)}
+      category={deletingCategory}
+    />
+  </>
   )
 }

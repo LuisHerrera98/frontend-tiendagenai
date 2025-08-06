@@ -6,11 +6,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Image from 'next/image'
 import { productService } from '@/lib/products'
 import { categoryService } from '@/lib/categories'
+import { sizeService } from '@/lib/sizes'
+import { brandService } from '@/lib/brands'
+import { typeService } from '@/lib/types'
+import { genderService } from '@/lib/genders'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CustomSelect } from '@/components/ui/custom-select'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
 import { Size } from '@/types'
 
@@ -24,18 +29,19 @@ export default function EditProductPage() {
     name: '',
     price: '',
     cost: '',
-    model_name: '',
-    brand_name: '',
+    type_id: '',
+    brand_id: '',
+    gender_id: '',
     category_id: '',
     active: true,
     discount: '0',
     stock: [] as Array<{ size_id: string; size_name: string; quantity: number; available: boolean }>
   })
 
-  // Get product data
+  // Get product data (including inactive products for admin)
   const { data: products } = useQuery({
     queryKey: ['products'],
-    queryFn: () => productService.getProducts({}),
+    queryFn: () => productService.getProducts({ showAll: true }),
   })
 
   const product = products?.data?.find(p => p._id === productId)
@@ -49,8 +55,26 @@ export default function EditProductPage() {
   // Get sizes for selected category
   const { data: categorySizes } = useQuery({
     queryKey: ['sizes-for-category', formData.category_id],
-    queryFn: () => productService.getSizesForCategory(formData.category_id),
+    queryFn: () => sizeService.getByCategory(formData.category_id),
     enabled: !!formData.category_id,
+  })
+
+  // Get brands
+  const { data: brands } = useQuery({
+    queryKey: ['brands'],
+    queryFn: brandService.getAll,
+  })
+
+  // Get types
+  const { data: types } = useQuery({
+    queryKey: ['types'],
+    queryFn: typeService.getAll,
+  })
+
+  // Get genders
+  const { data: genders } = useQuery({
+    queryKey: ['genders'],
+    queryFn: genderService.getAll,
   })
 
   const updateMutation = useMutation({
@@ -77,8 +101,9 @@ export default function EditProductPage() {
         name: product.name || '',
         price: product.price?.toString() || '',
         cost: product.cost?.toString() || '',
-        model_name: product.model_name || '',
-        brand_name: product.brand_name || '',
+        type_id: product.type_id || '',
+        brand_id: product.brand_id || '',
+        gender_id: product.gender_id || '',
         category_id: product.category_id || '',
         active: product.active ?? true,
         discount: product.discount?.toString() || '0',
@@ -94,15 +119,17 @@ export default function EditProductPage() {
       console.log('Current product stock:', product.stock) // Debug log
       
       const updatedStock = categorySizes.map((size: Size) => {
-        // Buscar si el producto ya tiene stock para esta talla (por nombre de talla)
+        // Buscar si el producto ya tiene stock para esta talla (por size_id primero, luego por nombre)
         const existingProductStock = product.stock.find(s => 
-          s.size_name === size.name || s.size_name === size.name.toUpperCase()
+          s.size_id === size._id || 
+          s.size_name === size.name || 
+          s.size_name === size.name.toUpperCase()
         )
         
-        console.log(`Size ${size.name} - existing stock:`, existingProductStock) // Debug log
+        console.log(`Size ${size.name} (${size._id}) - existing stock:`, existingProductStock) // Debug log
         
         return {
-          size_id: size._id,
+          size_id: size._id, // Usar el _id del size de MongoDB
           size_name: size.name,
           quantity: existingProductStock?.quantity || 0,
           available: true
@@ -121,8 +148,9 @@ export default function EditProductPage() {
       name: formData.name,
       price: parseFloat(formData.price),
       cost: parseFloat(formData.cost),
-      model_name: formData.model_name,
-      brand_name: formData.brand_name,
+      type_id: formData.type_id,
+      brand_id: formData.brand_id,
+      gender_id: formData.gender_id,
       category_id: formData.category_id,
       active: formData.active,
       discount: parseFloat(formData.discount),
@@ -133,12 +161,22 @@ export default function EditProductPage() {
   }
 
   const updateStockQuantity = (sizeId: string, quantity: number) => {
-    setFormData(prev => ({
-      ...prev,
-      stock: prev.stock.map(item =>
-        item.size_id === sizeId ? { ...item, quantity: Math.max(0, quantity) } : item
-      )
-    }))
+    console.log('updateStockQuantity called with:', { sizeId, quantity }) // Debug log
+    
+    setFormData(prev => {
+      const updatedStock = prev.stock.map(item => {
+        const isMatch = item.size_id === sizeId
+        console.log(`Checking item ${item.size_id} vs ${sizeId}: ${isMatch}`) // Debug log
+        return isMatch ? { ...item, quantity: Math.max(0, quantity) } : item
+      })
+      
+      console.log('Updated stock after change:', updatedStock) // Debug log
+      
+      return {
+        ...prev,
+        stock: updatedStock
+      }
+    })
   }
 
   const handleDelete = () => {
@@ -229,40 +267,67 @@ export default function EditProductPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoría</Label>
-                  <select
-                    id="category"
+                  <CustomSelect
+                    options={[
+                      { value: '', label: 'Seleccionar categoría' },
+                      ...(categories?.map(category => ({
+                        value: category._id,
+                        label: category.name
+                      })) || [])
+                    ]}
                     value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    {categories?.map((category) => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="brand_name">Marca</Label>
-                  <Input
-                    id="brand_name"
-                    value={formData.brand_name}
-                    onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
-                    placeholder="Marca del producto"
+                    onChange={(value) => setFormData({ ...formData, category_id: value })}
+                    placeholder="Seleccionar categoría"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="model_name">Modelo</Label>
-                  <Input
-                    id="model_name"
-                    value={formData.model_name}
-                    onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
-                    placeholder="Modelo del producto"
+                  <Label htmlFor="brand">Marca</Label>
+                  <CustomSelect
+                    options={[
+                      { value: '', label: 'Seleccionar marca' },
+                      ...(brands?.map(brand => ({
+                        value: brand._id,
+                        label: brand.name
+                      })) || [])
+                    ]}
+                    value={formData.brand_id}
+                    onChange={(value) => setFormData({ ...formData, brand_id: value })}
+                    placeholder="Seleccionar marca"
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <CustomSelect
+                    options={[
+                      { value: '', label: 'Seleccionar tipo' },
+                      ...(types?.map(type => ({
+                        value: type._id,
+                        label: type.name
+                      })) || [])
+                    ]}
+                    value={formData.type_id}
+                    onChange={(value) => setFormData({ ...formData, type_id: value })}
+                    placeholder="Seleccionar tipo"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Género</Label>
+                <CustomSelect
+                  options={[
+                    { value: '', label: 'Seleccionar género' },
+                    ...(genders?.map(gender => ({
+                      value: gender._id,
+                      label: gender.name
+                    })) || [])
+                  ]}
+                  value={formData.gender_id}
+                  onChange={(value) => setFormData({ ...formData, gender_id: value })}
+                  placeholder="Seleccionar género"
+                />
               </div>
             </CardContent>
           </Card>
@@ -323,8 +388,8 @@ export default function EditProductPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {formData.stock.map((stockItem) => (
-                    <div key={stockItem.size_id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  {formData.stock.map((stockItem, index) => (
+                    <div key={stockItem.size_id || `stock-${index}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">

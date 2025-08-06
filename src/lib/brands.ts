@@ -26,3 +26,9 @@ export const brandService = {
     return response.data
   },
 }
+
+// Export individual functions for convenience
+export const getBrands = brandService.getAll
+export const createBrand = brandService.create
+export const updateBrand = brandService.update
+export const deleteBrand = brandService.delete

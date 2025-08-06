@@ -59,7 +59,7 @@ export function CreateBrandDialog({ open, onOpenChange }: CreateBrandDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Crear Nueva Marca</DialogTitle>
           <DialogDescription>
@@ -76,7 +76,7 @@ export function CreateBrandDialog({ open, onOpenChange }: CreateBrandDialogProps
                 <FormItem>
                   <FormLabel>Nombre de la Marca</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nombre de la marca" />
+                    <Input {...field} placeholder="Nombre de la marca" autoComplete="off" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
