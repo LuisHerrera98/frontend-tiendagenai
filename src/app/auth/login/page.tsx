@@ -56,10 +56,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      await login({
-        ...data,
-        tenantId: currentTenant?._id,
-      });
+      await login(data as any);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Email o contraseña incorrectos';
       setError('root', { message });

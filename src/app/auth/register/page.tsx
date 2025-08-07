@@ -77,8 +77,8 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
     try {
-      const result = await verificationService.sendVerificationCode(data);
-      setPendingData(data);
+      const result = await verificationService.sendVerificationCode(data as any);
+      setPendingData(data as any);
       setShowVerificationModal(true);
     } catch (error: any) {
       setError('root', { message: error.message });

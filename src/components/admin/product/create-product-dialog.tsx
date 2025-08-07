@@ -72,7 +72,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
   const queryClient = useQueryClient()
 
   const form = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(productSchema) as any,
     defaultValues: {
       name: '',
       brand_id: '',
@@ -180,7 +180,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
   }
 
   const handleQuantityChange = (sizeId: string, value: string) => {
-    setSizeQuantities(prev => ({ ...prev, [sizeId]: value === '' ? '' : Math.max(0, parseInt(value) || 0) }))
+    setSizeQuantities(prev => ({ ...prev, [sizeId]: Math.max(0, parseInt(value) || 0) }))
   }
 
   const handleClearForm = () => {

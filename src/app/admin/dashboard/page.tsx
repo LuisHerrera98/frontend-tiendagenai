@@ -15,6 +15,17 @@ function LoadingSkeleton({ className = "" }) {
   )
 }
 
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  description: string;
+  icon: React.ElementType;
+  isLoading?: boolean;
+  error?: string | null;
+  trend?: 'up' | 'down' | null;
+  trendValue?: string | null;
+}
+
 function MetricCard({ 
   title, 
   value, 
@@ -24,7 +35,7 @@ function MetricCard({
   error = null,
   trend = null,
   trendValue = null
-}) {
+}: MetricCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -203,7 +214,7 @@ export default function AdminDashboard() {
         
         <MetricCard
           title="Inversión Total"
-          value={inversionData ? `$${parseFloat(inversionData.totalInversion).toLocaleString('es-AR')}` : '$0'}
+          value={inversionData?.totalInversion ? `$${inversionData.totalInversion.toLocaleString('es-AR')}` : '$0'}
           description="Valor del inventario (costo)"
           icon={DollarSign}
           isLoading={inversionLoading}

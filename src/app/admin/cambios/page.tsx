@@ -36,7 +36,16 @@ function LoadingSkeleton({ className = "" }) {
   )
 }
 
-function ExchangeMetricCard({ title, value, description, icon: Icon, isLoading = false, color = "blue" }) {
+interface ExchangeMetricCardProps {
+  title: string;
+  value: string | number;
+  description: string;
+  icon: React.ElementType;
+  isLoading?: boolean;
+  color?: "blue" | "green" | "orange" | "purple";
+}
+
+function ExchangeMetricCard({ title, value, description, icon: Icon, isLoading = false, color = "blue" }: ExchangeMetricCardProps) {
   const colorClasses = {
     blue: "text-blue-500",
     green: "text-green-500", 

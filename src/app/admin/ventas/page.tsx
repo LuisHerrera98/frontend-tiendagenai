@@ -90,14 +90,15 @@ function ExchangeDialog({ sale, open, setOpen }: { sale: Sale | null, open: bool
 
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (categoryDropdownOpen && !event.target.closest('.category-dropdown')) {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (categoryDropdownOpen && !target.closest('.category-dropdown')) {
         setCategoryDropdownOpen(false)
       }
-      if (sizeDropdownOpen && !event.target.closest('.size-dropdown')) {
+      if (sizeDropdownOpen && !target.closest('.size-dropdown')) {
         setSizeDropdownOpen(false)
       }
-      if (paymentDropdownOpen && !event.target.closest('.payment-dropdown')) {
+      if (paymentDropdownOpen && !target.closest('.payment-dropdown')) {
         setPaymentDropdownOpen(false)
       }
     }

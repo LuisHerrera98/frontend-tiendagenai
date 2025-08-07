@@ -5,22 +5,29 @@ import { authService, User, LoginData, RegisterData } from '@/lib/auth';
 import { tenantService, Tenant } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
+interface SimpleTenant {
+  id: string;
+  subdomain: string;
+  storeName: string;
+  isActive: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
-  tenant: Tenant | null;
+  tenant: SimpleTenant | null;
   loading: boolean;
   isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<any>;
   logout: () => void;
-  updateTenant: (tenant: Partial<Tenant>) => void;
+  updateTenant: (tenant: Partial<SimpleTenant>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [tenant, setTenant] = useState<SimpleTenant | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -123,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = '/auth/login';
   };
 
-  const updateTenant = (updates: Partial<Tenant>) => {
+  const updateTenant = (updates: Partial<SimpleTenant>) => {
     if (tenant) {
       setTenant({ ...tenant, ...updates });
     }

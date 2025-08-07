@@ -5,6 +5,8 @@ export interface Product {
   category_id?: string
   type_id?: string
   brand_id?: string
+  brand_name?: string
+  model_name?: string
   cost: number
   price: number
   discount: number
