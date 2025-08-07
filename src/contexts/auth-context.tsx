@@ -120,14 +120,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     // Limpiar localStorage
-    localStorage.clear();
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('tenant_subdomain');
     
     setUser(null);
     setTenant(null);
     
-    // Redirigir al login
-    window.location.href = '/auth/login';
+    // Limpiar headers de axios
+    authService.logout();
   };
 
   const updateTenant = (updates: Partial<SimpleTenant>) => {

@@ -121,10 +121,20 @@ export function TenantSwitcher() {
           localStorage.setItem('tenant_subdomain', newTenant.subdomain);
           
           // Actualizar el estado de las tiendas
-          setTenants(tenants.map(t => ({
+          const updatedTenants = tenants.map(t => ({
             ...t,
             isActive: t.id === tenantId
-          })));
+          }));
+          setTenants(updatedTenants);
+          
+          // Actualizar el usuario en localStorage con las tiendas actualizadas
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            user.tenants = updatedTenants;
+            user.currentTenantId = tenantId;
+            localStorage.setItem('user', JSON.stringify(user));
+          }
           
           // Emitir evento para notificar el cambio
           window.dispatchEvent(new Event('tenantChanged'));

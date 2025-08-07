@@ -1,5 +1,4 @@
 import axios from 'axios'
-import Cookies from 'js-cookie'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
 
@@ -17,18 +16,18 @@ export const api = axios.create({
 // Request interceptor
 api.interceptors.request.use((config) => {
   // Agregar token de autenticación si existe
-  const token = Cookies.get('auth_token')
+  const token = localStorage.getItem('auth_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
 
   // Agregar tenantId si existe
-  const userStr = Cookies.get('auth_user')
+  const userStr = localStorage.getItem('user')
   if (userStr) {
     try {
       const user = JSON.parse(userStr)
-      if (user?.tenantId) {
-        config.headers['X-Tenant-Id'] = user.tenantId
+      if (user?.currentTenantId) {
+        config.headers['X-Tenant-Id'] = user.currentTenantId
       }
     } catch (error) {
       console.error('Error parsing user:', error)
@@ -66,10 +65,11 @@ api.interceptors.response.use(
     }
     console.error('API Error:', errorInfo)
     
-    // Si es error 401, limpiar cookies y redirigir a login
+    // Si es error 401, limpiar localStorage y redirigir a login
     if (error.response?.status === 401) {
-      Cookies.remove('auth_token')
-      Cookies.remove('auth_user')
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user')
+      localStorage.removeItem('tenant_subdomain')
       window.location.href = '/auth/login'
     }
     

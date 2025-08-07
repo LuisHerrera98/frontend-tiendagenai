@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
@@ -40,7 +39,7 @@ export interface AuthResponse {
 
 class AuthService {
   private tokenKey = 'auth_token';
-  private userKey = 'auth_user';
+  private userKey = 'user';
 
   async register(data: RegisterData) {
     const response = await axios.post(`${API_URL}/auth/register`, data);
@@ -51,7 +50,7 @@ class AuthService {
     const response = await axios.post(`${API_URL}/auth/login`, data);
     const { access_token, user } = response.data;
     
-    // Guardar token y usuario
+    // Guardar token y usuario en localStorage
     this.setToken(access_token);
     this.setUser(user);
     
@@ -88,26 +87,28 @@ class AuthService {
   }
 
   logout() {
-    Cookies.remove(this.tokenKey);
-    Cookies.remove(this.userKey);
+    // Limpiar localStorage
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
+    localStorage.removeItem('tenant_subdomain');
     delete axios.defaults.headers.common['Authorization'];
     window.location.href = '/';
   }
 
   setToken(token: string) {
-    Cookies.set(this.tokenKey, token, { expires: 7 }); // 7 días
+    localStorage.setItem(this.tokenKey, token);
   }
 
-  getToken(): string | undefined {
-    return Cookies.get(this.tokenKey);
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
   }
 
   setUser(user: User) {
-    Cookies.set(this.userKey, JSON.stringify(user), { expires: 7 });
+    localStorage.setItem(this.userKey, JSON.stringify(user));
   }
 
   getUser(): User | null {
-    const userStr = Cookies.get(this.userKey);
+    const userStr = localStorage.getItem(this.userKey);
     if (!userStr) return null;
     try {
       return JSON.parse(userStr);
@@ -120,7 +121,7 @@ class AuthService {
     return !!this.getToken();
   }
 
-  setAuthHeader(token?: string) {
+  setAuthHeader(token?: string | null) {
     const authToken = token || this.getToken();
     if (authToken) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
