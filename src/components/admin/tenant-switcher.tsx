@@ -67,7 +67,7 @@ export function TenantSwitcher() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/tenants`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/user/tenants`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -100,7 +100,7 @@ export function TenantSwitcher() {
       console.log('auth_token:', token);
       console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/switch-tenant`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/api/user/switch-tenant`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
