@@ -35,3 +35,6 @@ export const sizeService = {
     return response.data
   },
 }
+
+// Export para usar en los componentes
+export const getSizes = sizeService.getAll
