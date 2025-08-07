@@ -24,6 +24,16 @@ jobs:
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           
+          # Crear directorio de proyectos si no existe
+          mkdir -p /home/ubuntu/projects/tiendagenai
+          
+          # Verificar si existe el proyecto, si no clonarlo
+          if [ ! -d "/home/ubuntu/projects/tiendagenai/frontend-tiendagenai" ]; then
+            echo "=== Clonando proyecto frontend TiendaGenAI ==="
+            cd /home/ubuntu/projects/tiendagenai
+            git clone https://github.com/${{ github.repository }}.git frontend-tiendagenai
+          fi
+          
           # Navegar al directorio del proyecto
           cd /home/ubuntu/projects/tiendagenai/frontend-tiendagenai
           
@@ -46,6 +56,11 @@ jobs:
           
           echo "=== Instalando dependencias ==="
           /home/ubuntu/.nvm/versions/node/v22.17.0/bin/npm install
+          
+          echo "=== Creando archivo .env.local ==="
+          cat > .env.local << EOF
+          NEXT_PUBLIC_API_URL=https://api.tiendagenai.com/api
+          EOF
           
           echo "=== Construyendo proyecto ==="
           /home/ubuntu/.nvm/versions/node/v22.17.0/bin/npm run build
