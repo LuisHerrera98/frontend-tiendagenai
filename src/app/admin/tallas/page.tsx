@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { CreateSizeDialog } from '@/components/admin/size/create-size-dialog'
 import { EditSizeDialog } from '@/components/admin/size/edit-size-dialog'
 import { DeleteSizeDialog } from '@/components/admin/size/delete-size-dialog'
@@ -20,6 +20,21 @@ export default function TallasPage() {
     queryFn: getSizes,
   })
 
+  // Agrupar tallas por categoría
+  const sizesByCategory = useMemo(() => {
+    const grouped: Record<string, any[]> = {}
+    
+    sizes.forEach((size: any) => {
+      const categoryName = size.category_id?.name || 'Sin categoría'
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = []
+      }
+      grouped[categoryName].push(size)
+    })
+    
+    return grouped
+  }, [sizes])
+
   const handleEdit = (size: any) => {
     setSelectedSize(size)
     setEditOpen(true)
@@ -31,72 +46,60 @@ export default function TallasPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Tallas</h1>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} className="bg-black hover:bg-gray-800">
           <Plus className="mr-2 h-4 w-4" />
           Nueva Talla
         </Button>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nombre
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Categoría
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {isLoading ? (
-              <tr>
-                <td colSpan={3} className="px-6 py-4 text-center">
-                  Cargando...
-                </td>
-              </tr>
-            ) : sizes.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                  No hay tallas registradas
-                </td>
-              </tr>
-            ) : (
-              sizes.map((size: any) => (
-                <tr key={size._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {size.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {size.category_id?.name || 'Sin categoría'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(size)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDelete(size)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {isLoading ? (
+        <div className="bg-white shadow-sm rounded-lg p-8 text-center">
+          <p className="text-gray-500">Cargando...</p>
+        </div>
+      ) : sizes.length === 0 ? (
+        <div className="bg-white shadow-sm rounded-lg p-8 text-center">
+          <p className="text-gray-500">No hay tallas registradas</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(sizesByCategory).map(([categoryName, categorySizes]) => (
+            <div key={categoryName} className="bg-white shadow-sm rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">{categoryName}</h3>
+              <div className="flex flex-wrap gap-3">
+                {categorySizes.map((size: any) => (
+                  <div
+                    key={size._id}
+                    className="group relative bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                  >
+                    <span className="font-medium">{size.name}</span>
+                    
+                    {/* Acciones al hover */}
+                    <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      <button
+                        onClick={() => handleEdit(size)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white p-1 rounded-full shadow-lg"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(size)}
+                        className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-lg"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <CreateSizeDialog
         open={createOpen}
