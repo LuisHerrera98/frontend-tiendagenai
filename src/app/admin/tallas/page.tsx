@@ -20,6 +20,9 @@ export default function TallasPage() {
     queryFn: getSizes,
   })
 
+  // Debug: Log para verificar los datos
+  console.log('Sizes data:', sizes)
+
   // Agrupar tallas por categoría
   const sizesByCategory = useMemo(() => {
     const grouped: Record<string, any[]> = {}
