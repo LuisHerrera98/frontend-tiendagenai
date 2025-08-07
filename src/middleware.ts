@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const { pathname, hostname } = request.nextUrl
-  const authToken = request.cookies.get('auth_token')?.value
   
   // Extraer el subdominio
   const getSubdomain = (host: string) => {
@@ -22,14 +21,9 @@ export function middleware(request: NextRequest) {
   
   // RUTAS PÚBLICAS (sin subdominio)
   if (!subdomain) {
-    // Admin panel - requiere autenticación pero NO subdominio
+    // Admin panel - permite acceso sin verificación del lado del servidor
+    // La verificación de autenticación se hace del lado del cliente
     if (pathname.startsWith('/admin')) {
-      if (!authToken && pathname !== '/admin/login') {
-        return NextResponse.redirect(new URL('/admin/login', request.url))
-      }
-      if (authToken && pathname === '/admin/login') {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-      }
       return NextResponse.next()
     }
 

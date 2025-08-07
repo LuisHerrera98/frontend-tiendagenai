@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { AdminHeader } from '@/components/admin/admin-header'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function AdminLayout({
   children,
@@ -10,6 +12,26 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const router = useRouter()
+  const { isAuthenticated, loading } = useAuth()
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/auth/login')
+    }
+  }, [loading, isAuthenticated, router])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg">Cargando...</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
