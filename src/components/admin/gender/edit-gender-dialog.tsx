@@ -9,6 +9,8 @@ import { genderService } from '@/lib/genders'
 import { Gender } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Toast } from '@/components/ui/toast'
+import { useToastError } from '@/hooks/use-toast-error'
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,7 @@ interface EditGenderDialogProps {
 
 export function EditGenderDialog({ gender, open, onOpenChange }: EditGenderDialogProps) {
   const queryClient = useQueryClient()
+  const { showToast, toastMessage, toastType, handleError, setShowToast } = useToastError()
 
   const form = useForm<GenderFormData>({
     resolver: zodResolver(genderSchema),
@@ -60,6 +63,9 @@ export function EditGenderDialog({ gender, open, onOpenChange }: EditGenderDialo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['genders'] })
       onOpenChange(false)
+    },
+    onError: (error: any) => {
+      handleError(error, 'el género')
     }
   })
 
@@ -68,7 +74,8 @@ export function EditGenderDialog({ gender, open, onOpenChange }: EditGenderDialo
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Editar Género</DialogTitle>
@@ -104,6 +111,15 @@ export function EditGenderDialog({ gender, open, onOpenChange }: EditGenderDialo
           </form>
         </Form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+    </>
   )
 }

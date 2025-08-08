@@ -26,3 +26,6 @@ export const categoryService = {
     return response.data
   },
 }
+
+// Export para usar en los componentes
+export const getCategories = categoryService.getAll

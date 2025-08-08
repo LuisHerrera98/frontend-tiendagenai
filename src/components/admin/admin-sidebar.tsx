@@ -12,7 +12,9 @@ import {
   Users,
   LogOut,
   Grid3X3,
-  UserCheck
+  UserCheck,
+  Settings,
+  ClipboardList
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -30,6 +32,8 @@ const navigation = [
   { name: 'Tipos', href: '/admin/tipos', icon: Grid3X3 },
   { name: 'Géneros', href: '/admin/generos', icon: UserCheck },
   { name: 'Ventas', href: '/admin/ventas', icon: ShoppingCart },
+  { name: 'Pedidos', href: '/admin/pedidos', icon: ClipboardList },
+  { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
 ]
 
 export function AdminSidebar({ isOpen = true, onClose }: AdminSidebarProps) {

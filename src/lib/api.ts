@@ -55,16 +55,6 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
-    const errorInfo = {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-      requestData: error.config?.data
-    }
-    console.error('API Error:', errorInfo)
-    
     // Si es error 401, limpiar localStorage y redirigir a login
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')
@@ -73,18 +63,39 @@ api.interceptors.response.use(
       window.location.href = '/auth/login'
     }
     
-    // Para debugging adicional
-    if (error.response) {
-      console.error('Response error details:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        headers: error.response.headers
-      })
-    } else if (error.request) {
-      console.error('Request error:', error.request)
-    } else {
-      console.error('Setup error:', error.message)
+    // Solo loguear errores que no sean controlados (400) o que sean críticos
+    const isControlledError = error.response?.status === 400 && 
+                             (error.response?.data?.error || 
+                              error.response?.data?.message);
+    
+    // Siempre loguear errores 403 (Forbidden) para debugging
+    if (error.response?.status === 403) {
+      console.error('Error 403 - Forbidden:', {
+        url: error.config?.url,
+        headers: error.config?.headers,
+        data: error.response?.data
+      });
+    }
+    
+    // Solo loguear si no es un error controlado o si estamos en modo debug
+    if (!isControlledError && error.response?.status !== 403) {
+      const errorInfo = {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      }
+      console.error('API Error:', errorInfo)
+      
+      // Para debugging adicional de errores no controlados
+      if (error.response && error.response.status >= 500) {
+        console.error('Server error details:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        })
+      }
     }
     
     return Promise.reject(error)

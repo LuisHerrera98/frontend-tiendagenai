@@ -5,6 +5,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ocultar indicadores de desarrollo */
+nextjs-portal,
+[data-nextjs-scroll-focus-boundary],
+#__next-build-indicator,
+.__next-build-indicator {
+  display: none !important;
+}
+
 /* Reset and global styles */
 * {
   box-sizing: border-box;

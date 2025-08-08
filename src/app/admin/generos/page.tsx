@@ -13,10 +13,7 @@ export default function GenerosPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestión de Géneros</h1>
-          <p className="text-gray-600">Administra los géneros de productos (ej: hombre, mujer, niño, niña)</p>
-        </div>
+        <h1 className="text-3xl font-bold">Géneros</h1>
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Género
@@ -25,7 +22,7 @@ export default function GenerosPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Géneros de Productos</CardTitle>
+          <CardTitle>Géneros</CardTitle>
         </CardHeader>
         <CardContent>
           <GenderList />

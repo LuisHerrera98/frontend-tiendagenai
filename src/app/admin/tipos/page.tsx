@@ -13,10 +13,7 @@ export default function TiposPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestión de Tipos</h1>
-          <p className="text-gray-600">Administra los tipos de productos (ej: OVERSIZED, SLIM, REGULAR)</p>
-        </div>
+        <h1 className="text-3xl font-bold">Tipos</h1>
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Tipo
@@ -25,7 +22,7 @@ export default function TiposPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tipos de Productos</CardTitle>
+          <CardTitle>Tipos</CardTitle>
         </CardHeader>
         <CardContent>
           <TypeList />

@@ -13,7 +13,7 @@ export default function BrandsPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Gestión de Marcas</h1>
+        <h1 className="text-3xl font-bold">Marcas</h1>
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Nueva Marca

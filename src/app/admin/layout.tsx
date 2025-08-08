@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { AdminHeader } from '@/components/admin/admin-header'
 import { useAuth } from '@/contexts/auth-context'
+import { Toaster } from 'react-hot-toast'
 
 export default function AdminLayout({
   children,
@@ -35,6 +36,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex h-screen bg-gray-100">
+      <Toaster position="top-right" />
       <AdminSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CustomSelect } from '@/components/ui/custom-select'
+import { Toast } from '@/components/ui/toast'
+import { useToastError } from '@/hooks/use-toast-error'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,7 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
   const [errors, setErrors] = useState({ name: '', category_id: '' })
   
   const queryClient = useQueryClient()
+  const { showToast, toastMessage, toastType, handleError, setShowToast } = useToastError()
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -44,6 +47,9 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
       setCategoryId('')
       setErrors({ name: '', category_id: '' })
     },
+    onError: (error: any) => {
+      handleError(error, 'la talla')
+    }
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -76,7 +82,8 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900">Crear Nuevo Talle</DialogTitle>
@@ -147,6 +154,15 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
           </div>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+    </>
   )
 }

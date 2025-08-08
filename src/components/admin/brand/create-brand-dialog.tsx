@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { brandService } from '@/lib/brands'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Toast } from '@/components/ui/toast'
+import { useToastError } from '@/hooks/use-toast-error'
 import {
   Dialog,
   DialogContent,
@@ -36,6 +38,7 @@ interface CreateBrandDialogProps {
 
 export function CreateBrandDialog({ open, onOpenChange }: CreateBrandDialogProps) {
   const queryClient = useQueryClient()
+  const { showToast, toastMessage, toastType, handleError, setShowToast } = useToastError()
 
   const form = useForm<BrandFormData>({
     resolver: zodResolver(brandSchema),
@@ -51,6 +54,9 @@ export function CreateBrandDialog({ open, onOpenChange }: CreateBrandDialogProps
       onOpenChange(false)
       form.reset()
     },
+    onError: (error: any) => {
+      handleError(error, 'la marca')
+    }
   })
 
   const onSubmit = (data: BrandFormData) => {
@@ -58,42 +64,52 @@ export function CreateBrandDialog({ open, onOpenChange }: CreateBrandDialogProps
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white">
-        <DialogHeader>
-          <DialogTitle>Crear Nueva Marca</DialogTitle>
-          <DialogDescription>
-            Ingresa el nombre de la nueva marca.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle>Crear Nueva Marca</DialogTitle>
+            <DialogDescription>
+              Ingresa el nombre de la nueva marca.
+            </DialogDescription>
+          </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre de la Marca</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Nombre de la marca" autoComplete="off" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de la Marca</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nombre de la marca" autoComplete="off" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Creando...' : 'Crear Marca'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={mutation.isPending}>
+                  {mutation.isPending ? 'Creando...' : 'Crear Marca'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+    </>
   )
 }

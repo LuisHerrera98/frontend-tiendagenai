@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const { pathname, hostname } = request.nextUrl
-  
+  const url = request.nextUrl
+  const hostname = request.headers.get('host') || ''
+  const pathname = url.pathname
+
+  // En desarrollo, permitir acceso directo a /store/[subdomain] para testing
+  if (process.env.NODE_ENV === 'development' && pathname.startsWith('/store/')) {
+    return NextResponse.next()
+  }
+
   // Extraer el subdominio
   const getSubdomain = (host: string) => {
     const parts = host.split('.')
-    // Si tiene al menos 3 partes (subdomain.domain.com), el primero es el subdominio
-    if (parts.length >= 3) {
+    // En producción: subdomain.tiendagenai.com
+    // En desarrollo: localhost:3001 (sin subdominio)
+    if (parts.length >= 3 || (parts.length === 2 && !host.includes('localhost'))) {
       const possibleSubdomain = parts[0]
-      // Ignorar www y api
-      if (possibleSubdomain !== 'www' && possibleSubdomain !== 'api') {
+      // Ignorar subdominios reservados
+      const reserved = ['www', 'api', 'admin', 'app', 'tiendagenai']
+      if (!reserved.includes(possibleSubdomain)) {
         return possibleSubdomain
       }
     }
@@ -31,6 +40,7 @@ export function middleware(request: NextRequest) {
     if (pathname.startsWith('/auth') || 
         pathname.startsWith('/api') || 
         pathname.startsWith('/landing') ||
+        pathname.startsWith('/store') || // Permitir acceso a /store en desarrollo
         pathname === '/') {
       // Raíz redirige a landing
       if (pathname === '/') {
@@ -43,22 +53,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/landing', request.url))
   }
 
-  // CON SUBDOMINIO - Es una tienda pública
-  // Redirigir al storefront público
-  if (pathname === '/' || pathname === '') {
-    // Aquí mostrará la tienda pública del subdominio
-    return NextResponse.rewrite(new URL('/store', request.url))
-  }
-
-  // Agregar el subdominio a los headers
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-tenant-subdomain', subdomain)
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
+  // CON SUBDOMINIO - Es una tienda pública (solo en producción)
+  // Reescribir la URL para usar nuestra ruta dinámica
+  url.pathname = `/store/${subdomain}${pathname}`
+  return NextResponse.rewrite(url)
 }
 
 export const config = {

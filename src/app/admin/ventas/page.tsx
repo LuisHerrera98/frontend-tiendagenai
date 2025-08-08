@@ -1770,7 +1770,7 @@ export default function VentasPage() {
       <div className="flex items-center justify-between">
         <div>
           {/* Desktop */}
-          <h1 className="hidden sm:block text-3xl font-bold">Gestión de Ventas</h1>
+          <h1 className="hidden sm:block text-3xl font-bold">Ventas</h1>
           {/* Mobile */}
           <h1 className="block sm:hidden text-2xl font-bold">Ventas</h1>
           

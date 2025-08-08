@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { typeService } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Toast } from '@/components/ui/toast'
+import { useToastError } from '@/hooks/use-toast-error'
 import {
   Dialog,
   DialogContent,
@@ -36,6 +38,7 @@ interface CreateTypeDialogProps {
 
 export function CreateTypeDialog({ open, onOpenChange }: CreateTypeDialogProps) {
   const queryClient = useQueryClient()
+  const { showToast, toastMessage, toastType, handleError, setShowToast } = useToastError()
 
   const form = useForm<TypeFormData>({
     resolver: zodResolver(typeSchema),
@@ -50,6 +53,9 @@ export function CreateTypeDialog({ open, onOpenChange }: CreateTypeDialogProps) 
       queryClient.invalidateQueries({ queryKey: ['types'] })
       onOpenChange(false)
       form.reset()
+    },
+    onError: (error: any) => {
+      handleError(error, 'el tipo')
     }
   })
 
@@ -58,7 +64,8 @@ export function CreateTypeDialog({ open, onOpenChange }: CreateTypeDialogProps) 
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Crear Nuevo Tipo</DialogTitle>
@@ -94,6 +101,15 @@ export function CreateTypeDialog({ open, onOpenChange }: CreateTypeDialogProps) 
           </form>
         </Form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+    </>
   )
 }

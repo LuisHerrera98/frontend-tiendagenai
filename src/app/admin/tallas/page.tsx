@@ -8,6 +8,7 @@ import { EditSizeDialog } from '@/components/admin/size/edit-size-dialog'
 import { DeleteSizeDialog } from '@/components/admin/size/delete-size-dialog'
 import { useQuery } from '@tanstack/react-query'
 import { getSizes } from '@/lib/sizes'
+import { getCategories } from '@/lib/categories'
 
 export default function TallasPage() {
   const [createOpen, setCreateOpen] = useState(false)
@@ -15,20 +16,29 @@ export default function TallasPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedSize, setSelectedSize] = useState<any>(null)
 
-  const { data: sizes = [], isLoading } = useQuery({
+  const { data: sizes = [], isLoading: sizesLoading } = useQuery({
     queryKey: ['sizes'],
     queryFn: getSizes,
   })
 
-  // Debug: Log para verificar los datos
-  console.log('Sizes data:', sizes)
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+  })
+
+  const isLoading = sizesLoading || categoriesLoading
 
   // Agrupar tallas por categoría
   const sizesByCategory = useMemo(() => {
     const grouped: Record<string, any[]> = {}
     
+    // Crear un mapa de categorías para búsqueda rápida
+    const categoryMap = new Map(categories.map(cat => [cat._id, cat]))
+    
     sizes.forEach((size: any) => {
-      const categoryName = size.category_id?.name || 'Sin categoría'
+      const category = categoryMap.get(size.category_id)
+      const categoryName = category?.name || 'Sin categoría'
+      
       if (!grouped[categoryName]) {
         grouped[categoryName] = []
       }
@@ -36,7 +46,7 @@ export default function TallasPage() {
     })
     
     return grouped
-  }, [sizes])
+  }, [sizes, categories])
 
   const handleEdit = (size: any) => {
     setSelectedSize(size)
@@ -67,33 +77,33 @@ export default function TallasPage() {
           <p className="text-gray-500">No hay tallas registradas</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(sizesByCategory).map(([categoryName, categorySizes]) => (
-            <div key={categoryName} className="bg-white shadow-sm rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">{categoryName}</h3>
-              <div className="flex flex-wrap gap-3">
+            <div key={categoryName} className="bg-white shadow-sm rounded-lg p-4">
+              <h3 className="text-sm font-semibold mb-3 text-gray-700 uppercase tracking-wider">{categoryName}</h3>
+              <div className="flex flex-wrap gap-2">
                 {categorySizes.map((size: any) => (
                   <div
                     key={size._id}
-                    className="group relative bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                    className="group relative bg-gray-900 text-white px-3 py-1.5 rounded text-sm hover:bg-gray-800 transition-colors"
                   >
                     <span className="font-medium">{size.name}</span>
                     
                     {/* Acciones al hover */}
-                    <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                    <div className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
                       <button
                         onClick={() => handleEdit(size)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white p-1 rounded-full shadow-lg"
+                        className="bg-blue-500 hover:bg-blue-600 text-white p-0.5 rounded-full shadow"
                         title="Editar"
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <Edit2 className="w-2.5 h-2.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(size)}
-                        className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-lg"
+                        className="bg-red-500 hover:bg-red-600 text-white p-0.5 rounded-full shadow"
                         title="Eliminar"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   </div>
