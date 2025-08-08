@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, Menu, X } from 'lucide-react'
+import { ShoppingCart, Menu, X, Package } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useRouter } from 'next/navigation'
 
@@ -50,6 +50,10 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
             <Link href="/" className="text-gray-700 hover:text-gray-900">
               Inicio
             </Link>
+            <Link href={`/store/${storeData.subdomain}/tracking`} className="text-gray-700 hover:text-gray-900 flex items-center gap-1">
+              <Package className="w-4 h-4" />
+              Mi Pedido
+            </Link>
             <Link href="/contacto" className="text-gray-700 hover:text-gray-900">
               Contacto
             </Link>
@@ -85,6 +89,10 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
             <div className="flex flex-col space-y-4">
               <Link href="/" className="text-gray-700 hover:text-gray-900">
                 Inicio
+              </Link>
+              <Link href={`/store/${storeData.subdomain}/tracking`} className="text-gray-700 hover:text-gray-900 flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Mi Pedido
               </Link>
               <Link href="/contacto" className="text-gray-700 hover:text-gray-900">
                 Contacto

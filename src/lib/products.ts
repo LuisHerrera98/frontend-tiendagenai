@@ -30,31 +30,9 @@ export const productService = {
     return response.data
   },
 
-  // Create product with images
-  createProduct: async (productData: CreateProductDto, images?: File[]): Promise<Product> => {
-    const formData = new FormData()
-    
-    // Add product data
-    Object.entries(productData).forEach(([key, value]) => {
-      if (key === 'stock') {
-        formData.append(key, JSON.stringify(value))
-      } else if (value !== undefined && value !== null) {
-        formData.append(key, value.toString())
-      }
-    })
-    
-    // Add images
-    if (images && images.length > 0) {
-      images.forEach((image) => {
-        formData.append('images', image)
-      })
-    }
-
-    const response = await api.post('/product', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+  // Create product with images (now URLs)
+  createProduct: async (productData: CreateProductDto): Promise<Product> => {
+    const response = await api.post('/product', productData)
     return response.data
   },
 

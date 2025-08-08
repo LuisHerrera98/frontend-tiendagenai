@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link';
 import { Store, Loader2 } from 'lucide-react';
 import { tenantService } from '@/lib/tenant';
+import { loginLimiter, useRateLimiter } from '@/lib/rate-limiter';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -24,12 +25,14 @@ export default function LoginPage() {
   const { login, tenant } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [currentTenant, setCurrentTenant] = useState<any>(null);
+  const { checkLimit, resetLimit } = useRateLimiter(loginLimiter);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
+    getValues,
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
@@ -54,9 +57,16 @@ export default function LoginPage() {
   }, [tenant]);
 
   const onSubmit = async (data: LoginForm) => {
+    // Rate limiting por email
+    if (!checkLimit(data.email)) {
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await login(data as any);
+      // Reset el límite en login exitoso
+      resetLimit(data.email);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Email o contraseña incorrectos';
       setError('root', { message });

@@ -13,6 +13,15 @@ interface StoreData {
   subdomain: string
   storeName: string
   customization?: any
+  settings?: {
+    email?: string
+    phone?: string
+    address?: string
+    whatsapp?: string
+    whatsappEnabled?: boolean
+    instagram?: string
+    facebook?: string
+  }
 }
 
 export default function CheckoutPage() {
@@ -98,17 +107,59 @@ export default function CheckoutPage() {
         discount: item.discount || 0
       }))
 
+      // Guardar información del cliente y pedido en localStorage para el tracking
+      localStorage.setItem('lastCustomerName', formData.customerName)
+      localStorage.setItem('lastCustomerPhone', formData.customerPhone)
+      localStorage.setItem('lastCustomerEmail', formData.customerEmail)
+      localStorage.setItem('lastOrderTotal', getTotalWithDiscount().toString())
+      localStorage.setItem('lastOrderItems', JSON.stringify(
+        items.map(item => ({
+          productName: item.productName,
+          image: item.image,
+          sizeName: item.sizeName,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      ))
+
       // Crear el pedido
       const response = await api.post(`/public/order/${targetSubdomain}`, {
         ...formData,
         items: orderItems
       })
 
-      // Limpiar carrito
-      clearCart()
+      if (response.data?.order) {
+        const orderNumber = response.data.order._id || response.data.order.orderNumber
+        
+        // Guardar información completa del pedido
+        const orderInfo = {
+          orderNumber: orderNumber,
+          date: new Date().toISOString(),
+          status: 'pending',
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          customerEmail: formData.customerEmail,
+          total: getTotalWithDiscount(),
+          items: items.map(item => ({
+            productName: item.productName,
+            image: item.image,
+            sizeName: item.sizeName,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          storePhone: storeData?.settings?.phone,
+          storeWhatsapp: storeData?.settings?.whatsapp
+        }
+        
+        // Guardar con el número de orden para búsquedas
+        localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderInfo))
+        
+        // Limpiar carrito
+        clearCart()
 
-      // Redirigir a página de confirmación
-      router.push(`/store/${subdomain}/pedido-confirmado?orderId=${response.data.order._id}`)
+        // Redirigir a página de confirmación
+        router.push(`/store/${subdomain}/pedido-confirmado?orderId=${orderNumber}`)
+      }
       
     } catch (error: any) {
       console.error('Error creating order:', error)

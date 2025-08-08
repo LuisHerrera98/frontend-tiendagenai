@@ -11,6 +11,7 @@ import { typeService } from '@/lib/types'
 import { Product, ProductFilters } from '@/types'
 import { ProductFilters as ProductFiltersComponent } from './product-filters'
 import { ViewProductDialog } from './view-product-dialog'
+import { ProductListMobile } from './product-list-mobile'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash2, Eye, X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
@@ -131,111 +132,133 @@ export function ProductList() {
         </div>
       )}
       
-      {/* Results table */}
+      {/* Product Table/Cards */}
       {data?.data && data.data.length > 0 && (
-        <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-20">Imagen</TableHead>
-            <TableHead>Código</TableHead>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Marca</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Género</TableHead>
-            <TableHead>Precio</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Stock</TableHead>
-            <TableHead>Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.data.map((product: Product) => (
-            <TableRow key={product._id} className="h-20">
-              <TableCell className="w-20 p-2">
-                <div 
-                  className="relative h-[70px] w-[70px] rounded-lg overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
-                  onClick={() => {
-                    if (product.images && product.images.length > 0) {
-                      setSelectedProduct(product)
-                      setCurrentImageIndex(0)
-                    }
-                  }}
-                >
-                  {product.images && product.images.length > 0 ? (
-                    <Image
-                      src={product.images[0].url}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      sizes="70px"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400 text-xs bg-gray-50 border-2 border-dashed border-gray-200">
-                      Sin imagen
-                    </div>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="font-mono">{product.code}</TableCell>
-              <TableCell className="font-medium">{product.name}</TableCell>
-              <TableCell>{brands?.find(b => b._id === product.brand_id)?.name || '-'}</TableCell>
-              <TableCell>{types?.find(t => t._id === product.type_id)?.name || '-'}</TableCell>
-              <TableCell>
-                {(() => {
-                  const gender = genders?.find(g => g._id === product.gender_id)
-                  const genderName = gender?.name || '-'
-                  const lowerName = genderName.toLowerCase()
-                  
-                  return (
-                    <Badge variant="outline" className={`${
-                      lowerName.includes('hombre') || lowerName.includes('masculino') ? 'border-blue-200 text-blue-700 bg-blue-50' :
-                      lowerName.includes('mujer') || lowerName.includes('femenino') ? 'border-pink-200 text-pink-700 bg-pink-50' :
-                      lowerName.includes('niño') ? 'border-cyan-200 text-cyan-700 bg-cyan-50' :
-                      lowerName.includes('niña') ? 'border-purple-200 text-purple-700 bg-purple-50' :
-                      'border-gray-200 text-gray-700 bg-gray-50'
-                    }`}>
-                      {genderName}
-                    </Badge>
-                  )
-                })()}
-              </TableCell>
-              <TableCell>${Math.floor(product.price) === product.price ? product.price : product.price.toFixed(2)}</TableCell>
-              <TableCell>
-                <Badge variant={product.active ? 'default' : 'secondary'}>
-                  {product.active ? 'Activo' : 'Inactivo'}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {product.stock?.reduce((sum, item) => sum + item.quantity, 0) || 0}
-              </TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => {
-                      setViewProduct(product)
-                      setViewDialogOpen(true)
-                    }}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => router.push(`/admin/productos/editar/${product._id}`)}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+        <>
+          {/* Desktop view - Table */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-20">Imagen</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Marca</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Género</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.data.map((product: Product) => (
+                  <TableRow key={product._id} className="h-20">
+                    <TableCell className="w-20 p-2">
+                      <div 
+                        className="relative h-[70px] w-[70px] rounded-lg overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
+                        onClick={() => {
+                          if (product.images && product.images.length > 0) {
+                            setSelectedProduct(product)
+                            setCurrentImageIndex(0)
+                          }
+                        }}
+                      >
+                        {product.images && product.images.length > 0 ? (
+                          <Image
+                            src={product.images[0].url}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                            sizes="70px"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-gray-400 text-xs bg-gray-50 border-2 border-dashed border-gray-200">
+                            Sin imagen
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono">{product.code}</TableCell>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>{brands?.find(b => b._id === product.brand_id)?.name || '-'}</TableCell>
+                    <TableCell>{types?.find(t => t._id === product.type_id)?.name || '-'}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const gender = genders?.find(g => g._id === product.gender_id)
+                        const genderName = gender?.name || '-'
+                        const lowerName = genderName.toLowerCase()
+                        
+                        return (
+                          <Badge variant="outline" className={`${
+                            lowerName.includes('hombre') || lowerName.includes('masculino') ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                            lowerName.includes('mujer') || lowerName.includes('femenino') ? 'border-pink-200 text-pink-700 bg-pink-50' :
+                            lowerName.includes('niño') ? 'border-cyan-200 text-cyan-700 bg-cyan-50' :
+                            lowerName.includes('niña') ? 'border-purple-200 text-purple-700 bg-purple-50' :
+                            'border-gray-200 text-gray-700 bg-gray-50'
+                          }`}>
+                            {genderName}
+                          </Badge>
+                        )
+                      })()}
+                    </TableCell>
+                    <TableCell>${Math.floor(product.price) === product.price ? product.price : product.price.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge variant={product.active ? 'default' : 'secondary'}>
+                        {product.active ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {product.stock?.reduce((sum, item) => sum + item.quantity, 0) || 0}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setViewProduct(product)
+                            setViewDialogOpen(true)
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => router.push(`/admin/productos/editar/${product._id}`)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile view - Cards */}
+          <div className="block md:hidden">
+            <ProductListMobile 
+              products={data.data}
+              brands={brands || []}
+              onViewProduct={(product) => {
+                setViewProduct(product)
+                setViewDialogOpen(true)
+              }}
+              onViewImages={(product) => {
+                setSelectedProduct(product)
+                setCurrentImageIndex(0)
+              }}
+              onDeleteProduct={() => {}}
+            />
+          </div>
+        </>
       )}
 
       {/* Pagination */}

@@ -18,8 +18,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CustomSelect } from '@/components/ui/custom-select'
-import { Upload, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import Image from 'next/image'
+import { CloudinaryUpload } from './cloudinary-upload'
 import {
   Dialog,
   DialogContent,
@@ -66,7 +67,8 @@ interface CreateProductDialogProps {
 }
 
 export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogProps) {
-  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
   const queryClient = useQueryClient()
@@ -121,13 +123,13 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
   }, [selectedCategoryId])
 
   const mutation = useMutation({
-    mutationFn: ({ productData, images }: { productData: CreateProductDto; images: File[] }) => 
-      productService.createProduct(productData, images),
+    mutationFn: (productData: CreateProductDto) => 
+      productService.createProduct(productData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       onOpenChange(false)
       form.reset()
-      setSelectedImages([])
+      setImageUrls([])
       setSelectedSizes([])
       setSizeQuantities({})
     },
@@ -154,9 +156,10 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       price: typeof data.price === 'string' ? parseFloat(data.price) || 0 : data.price,
       discount: typeof data.discount === 'string' ? parseFloat(data.discount) || 0 : data.discount,
       stock,
+      images: imageUrls,
     }
     
-    mutation.mutate({ productData, images: selectedImages })
+    mutation.mutate(productData)
   }
 
   const handleSizeToggle = (sizeId: string) => {
@@ -195,7 +198,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       active: true,
       gender_id: '',
     })
-    setSelectedImages([])
+    setImageUrls([])
     setSelectedSizes([])
     setSizeQuantities({})
   }
@@ -436,49 +439,39 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
             <div>
               <Label className="text-base font-medium">Imágenes del Producto</Label>
               <div className="mt-2">
-                <div 
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                >
-                  <Upload className="mx-auto h-6 w-6 text-gray-400 mb-1" />
-                  <p className="text-sm text-gray-600">Seleccionar imágenes</p>
-                  <p className="text-xs text-gray-500">Máximo 4 imágenes</p>
-                </div>
-                <input
-                  id="image-upload"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || [])
-                    setSelectedImages(files.slice(0, 4))
-                    // Reset input value to allow re-selecting same files
-                    e.target.value = ''
+                <CloudinaryUpload
+                  onUpload={(urls) => {
+                    setImageUrls(prev => [...prev, ...urls].slice(0, 5))
+                    setUploading(false)
                   }}
-                  className="hidden"
+                  uploading={uploading}
+                  multiple={true}
+                  maxFiles={5}
+                  buttonText={imageUrls.length > 0 ? "Agregar más imágenes" : "Subir imágenes"}
                 />
-                {selectedImages.length > 0 && (
+                {imageUrls.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-2">
-                      {selectedImages.length} imagen(es) seleccionada(s):
+                      {imageUrls.length} imagen(es) subida(s):
                     </p>
                     <div className="grid grid-cols-4 gap-2">
-                      {selectedImages.map((file, index) => (
+                      {imageUrls.map((url, index) => (
                         <div key={index} className="relative group">
                           <div className="aspect-square relative overflow-hidden rounded-lg border">
                             <Image
-                              src={URL.createObjectURL(file)}
+                              src={url}
                               alt={`Preview ${index + 1}`}
                               fill
                               className="object-cover"
+                              sizes="150px"
                             />
                           </div>
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedImages(prev => prev.filter((_, i) => i !== index))
+                              setImageUrls(prev => prev.filter((_, i) => i !== index))
                             }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                           >
                             <X className="h-3 w-3" />
                           </button>

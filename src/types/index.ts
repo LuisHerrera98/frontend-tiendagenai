@@ -69,12 +69,16 @@ export interface CreateProductDto {
   category_id?: string
   model_name?: string
   brand_name?: string
+  brand_id?: string
+  type_id?: string
+  gender_id?: string
   cost: number
   price: number
   discount?: number
   active?: boolean
   gender?: 'hombre' | 'mujer' | 'unisex'
   stock: Omit<ProductStock, 'available'>[]
+  images?: string[]  // Array of URLs from Cloudinary
 }
 
 export interface UpdateProductDto {
@@ -82,13 +86,16 @@ export interface UpdateProductDto {
   category_id?: string
   model_name?: string
   brand_name?: string
+  brand_id?: string
+  type_id?: string
+  gender_id?: string
   cost?: number
   price?: number
   discount?: number
   active?: boolean
   gender?: 'hombre' | 'mujer' | 'unisex'
   stock?: ProductStock[]
-  images?: ProductImage[]
+  images?: string[] | ProductImage[]  // Can be URLs or existing images
 }
 
 export interface ProductFilters {

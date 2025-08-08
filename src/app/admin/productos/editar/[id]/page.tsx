@@ -16,8 +16,9 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CustomSelect } from '@/components/ui/custom-select'
-import { ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, X } from 'lucide-react'
 import { Size } from '@/types'
+import { CloudinaryUpload } from '@/components/admin/product/cloudinary-upload'
 
 export default function EditProductPage() {
   const params = useParams()
@@ -35,8 +36,10 @@ export default function EditProductPage() {
     category_id: '',
     active: true,
     discount: '0',
-    stock: [] as Array<{ size_id: string; size_name: string; quantity: number; available: boolean }>
+    stock: [] as Array<{ size_id: string; size_name: string; quantity: number; available: boolean }>,
+    images: [] as string[]
   })
+  const [uploading, setUploading] = useState(false)
 
   // Get product data (including inactive products for admin)
   const { data: products } = useQuery({
@@ -107,7 +110,8 @@ export default function EditProductPage() {
         category_id: product.category_id || '',
         active: product.active ?? true,
         discount: product.discount?.toString() || '0',
-        stock: product.stock || []
+        stock: product.stock || [],
+        images: product.images?.map((img: any) => typeof img === 'string' ? img : img.url) || []
       })
     }
   }, [product])
@@ -154,7 +158,8 @@ export default function EditProductPage() {
       category_id: formData.category_id,
       active: formData.active,
       discount: parseFloat(formData.discount),
-      stock: formData.stock
+      stock: formData.stock,
+      images: formData.images
     }
 
     updateMutation.mutate(updateData)
@@ -223,26 +228,60 @@ export default function EditProductPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Product Image */}
+        {/* Product Images */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-lg">Imagen del Producto</CardTitle>
+            <CardTitle className="text-lg">Imágenes del Producto</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden">
-              {product.images && product.images.length > 0 ? (
-                <Image
-                  src={product.images[0].url}
-                  alt={product.name}
-                  fill
-                  className="object-contain p-4"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">
-                  <span>Sin imagen</span>
+          <CardContent className="space-y-4">
+            <CloudinaryUpload
+              onUpload={(urls) => {
+                setFormData(prev => ({
+                  ...prev,
+                  images: [...prev.images, ...urls].slice(0, 5)
+                }))
+                setUploading(false)
+              }}
+              uploading={uploading}
+              multiple={true}
+              maxFiles={5}
+              buttonText={formData.images.length > 0 ? "Agregar más imágenes" : "Subir imágenes"}
+            />
+            
+            {formData.images.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700">
+                  {formData.images.length} imagen(es):
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {formData.images.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square relative overflow-hidden rounded-lg border bg-gray-50">
+                        <Image
+                          src={url}
+                          alt={`Imagen ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="150px"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            images: prev.images.filter((_, i) => i !== index)
+                          }))
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -60,6 +60,8 @@ jobs:
           echo "=== Creando archivo .env.local ==="
           cat > .env.local << EOF
           NEXT_PUBLIC_API_URL=https://api.tiendagenai.com/api
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dwkwu8adz
+          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=ml_default
           EOF
           
           echo "=== Construyendo proyecto ==="
