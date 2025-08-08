@@ -49,13 +49,15 @@ export function CloudinaryUpload({
         // Credenciales de Cloudinary
         cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dwkwu8adz',
         uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default',
-        sources: ['local', 'url', 'camera'],
+        sources: ['local'],  // Solo archivos locales
+        defaultSource: 'local',  // Abrir directamente el selector de archivos
         multiple: multiple,
         maxFiles: maxFiles,
         folder: 'products',
         resourceType: 'image',
         cropping: false,
         showSkipCropButton: false,
+        showPoweredBy: false,  // Ocultar "powered by Cloudinary"
         styles: {
           palette: {
             window: '#FFFFFF',
@@ -84,8 +86,6 @@ export function CloudinaryUpload({
             about_uw: 'Acerca del widget',
             menu: {
               files: 'Mis Archivos',
-              web: 'Dirección Web',
-              camera: 'Cámara',
             },
             selection_counter: {
               selected: 'Seleccionado'
@@ -139,19 +139,6 @@ export function CloudinaryUpload({
                 title_single: 'Arrastra archivo aquí',
                 subtitle: 'o busca para seleccionar'
               }
-            },
-            camera: {
-              capture: 'Capturar',
-              cancel: 'Cancelar',
-              take_pic: 'Toma una foto y súbela',
-              explanation: 'Asegúrate que tu cámara está conectada y que tu navegador permite el uso de la cámara. Cuando estés listo, haz clic en Capturar.',
-              camera_error: 'Fallo al acceder a la cámara',
-              retry: 'Reintentar cámara',
-              file_name: 'Cámara_{{time}}'
-            },
-            url: {
-              inner_title: 'URL del archivo público:',
-              input_placeholder: 'http://direccion.remota.com/imagen.jpg'
             },
             local: {
               browse: 'Buscar',

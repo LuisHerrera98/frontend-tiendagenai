@@ -31,7 +31,7 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Nombre */}
-          <Link href="/" className="flex items-center">
+          <Link href={`/store/${storeData.subdomain}`} className="flex items-center">
             {storeData.customization?.logo ? (
               <img 
                 src={storeData.customization.logo} 
@@ -47,14 +47,14 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
 
           {/* Navegación Desktop */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-gray-700 hover:text-gray-900">
+            <Link href={`/store/${storeData.subdomain}`} className="text-gray-700 hover:text-gray-900">
               Inicio
             </Link>
             <Link href={`/store/${storeData.subdomain}/tracking`} className="text-gray-700 hover:text-gray-900 flex items-center gap-1">
               <Package className="w-4 h-4" />
               Mi Pedido
             </Link>
-            <Link href="/contacto" className="text-gray-700 hover:text-gray-900">
+            <Link href={`/store/${storeData.subdomain}/contacto`} className="text-gray-700 hover:text-gray-900">
               Contacto
             </Link>
           </nav>
@@ -87,14 +87,14 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
         {mobileMenuOpen && (
           <nav className="md:hidden py-4 border-t">
             <div className="flex flex-col space-y-4">
-              <Link href="/" className="text-gray-700 hover:text-gray-900">
+              <Link href={`/store/${storeData.subdomain}`} className="text-gray-700 hover:text-gray-900">
                 Inicio
               </Link>
               <Link href={`/store/${storeData.subdomain}/tracking`} className="text-gray-700 hover:text-gray-900 flex items-center gap-2">
                 <Package className="w-4 h-4" />
                 Mi Pedido
               </Link>
-              <Link href="/contacto" className="text-gray-700 hover:text-gray-900">
+              <Link href={`/store/${storeData.subdomain}/contacto`} className="text-gray-700 hover:text-gray-900">
                 Contacto
               </Link>
             </div>
