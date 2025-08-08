@@ -20,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { CustomSelect } from '@/components/ui/custom-select'
 import { X } from 'lucide-react'
 import Image from 'next/image'
-import { CloudinaryUpload } from './cloudinary-upload'
+import { SimpleCloudinaryUpload } from './simple-cloudinary-upload'
 import {
   Dialog,
   DialogContent,
@@ -68,7 +68,6 @@ interface CreateProductDialogProps {
 
 export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogProps) {
   const [imageUrls, setImageUrls] = useState<string[]>([])
-  const [uploading, setUploading] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
   const queryClient = useQueryClient()
@@ -439,12 +438,10 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
             <div>
               <Label className="text-base font-medium">Imágenes del Producto</Label>
               <div className="mt-2">
-                <CloudinaryUpload
+                <SimpleCloudinaryUpload
                   onUpload={(urls) => {
-                    setImageUrls(prev => [...prev, ...urls].slice(0, 5))
-                    setUploading(false)
+                    setImageUrls(urls)
                   }}
-                  uploading={uploading}
                   multiple={true}
                   maxFiles={5}
                   buttonText={imageUrls.length > 0 ? "Agregar más imágenes" : "Subir imágenes"}
