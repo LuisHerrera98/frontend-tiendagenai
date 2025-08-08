@@ -26,22 +26,29 @@ export function SimpleCloudinaryUpload({
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default')
-    formData.append('folder', 'products')
+    // No incluir folder aquí, debe estar configurado en el upload preset
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dwkwu8adz'}/image/upload`,
-      {
-        method: 'POST',
-        body: formData
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dwkwu8adz'}/image/upload`,
+        {
+          method: 'POST',
+          body: formData
+        }
+      )
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        console.error('Cloudinary error:', data)
+        throw new Error(data.error?.message || 'Error al subir imagen')
       }
-    )
 
-    if (!response.ok) {
-      throw new Error('Error al subir imagen')
+      return data.secure_url
+    } catch (error) {
+      console.error('Upload error:', error)
+      throw error
     }
-
-    const data = await response.json()
-    return data.secure_url
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +83,21 @@ export function SimpleCloudinaryUpload({
       }
     } catch (error) {
       console.error('Error uploading images:', error)
-      alert('Error al subir las imágenes. Por favor intenta nuevamente.')
+      
+      // Limpiar previews en caso de error
+      newPreviews.forEach(url => URL.revokeObjectURL(url))
+      setPreviews([])
+      
+      // Mensaje de error más específico
+      if (error instanceof Error) {
+        if (error.message.includes('1684-942fab82e20b89bb')) {
+          alert('Error: El upload preset no está configurado correctamente en Cloudinary. Por favor verifica la configuración.')
+        } else {
+          alert(`Error al subir las imágenes: ${error.message}`)
+        }
+      } else {
+        alert('Error al subir las imágenes. Por favor intenta nuevamente.')
+      }
     } finally {
       setUploading(false)
     }

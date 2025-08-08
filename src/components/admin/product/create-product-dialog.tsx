@@ -20,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { CustomSelect } from '@/components/ui/custom-select'
 import { X } from 'lucide-react'
 import Image from 'next/image'
-import { SimpleCloudinaryUpload } from './simple-cloudinary-upload'
+import { HybridCloudinaryUpload } from './hybrid-cloudinary-upload'
 import {
   Dialog,
   DialogContent,
@@ -438,45 +438,14 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
             <div>
               <Label className="text-base font-medium">Imágenes del Producto</Label>
               <div className="mt-2">
-                <SimpleCloudinaryUpload
+                <HybridCloudinaryUpload
                   onUpload={(urls) => {
                     setImageUrls(urls)
                   }}
                   multiple={true}
                   maxFiles={5}
-                  buttonText={imageUrls.length > 0 ? "Agregar más imágenes" : "Subir imágenes"}
+                  buttonText="Subir imágenes"
                 />
-                {imageUrls.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
-                      {imageUrls.length} imagen(es) subida(s):
-                    </p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {imageUrls.map((url, index) => (
-                        <div key={index} className="relative group">
-                          <div className="aspect-square relative overflow-hidden rounded-lg border">
-                            <Image
-                              src={url}
-                              alt={`Preview ${index + 1}`}
-                              fill
-                              className="object-cover"
-                              sizes="150px"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setImageUrls(prev => prev.filter((_, i) => i !== index))
-                            }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
