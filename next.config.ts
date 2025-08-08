@@ -46,7 +46,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()'
+            value: 'camera=(self), microphone=(), geolocation=()'
           },
           {
             // CSP flexible para no romper funcionalidad
@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
               img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com;
               font-src 'self' data:;
               connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com http://localhost:3000 https://api.tiendagenai.com;
-              frame-src 'self' https://widget.cloudinary.com;
+              frame-src 'self' https://widget.cloudinary.com https://upload-widget.cloudinary.com;
               media-src 'self' https://res.cloudinary.com;
             `.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
           }
