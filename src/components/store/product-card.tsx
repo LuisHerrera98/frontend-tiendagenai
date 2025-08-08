@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ShoppingCart, Heart } from 'lucide-react'
+import { getProductImage } from '@/lib/cloudinary-transforms'
 
 interface Product {
   id: string
@@ -24,7 +25,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const imageUrl = product.images?.[0] || '/placeholder-product.jpg'
+  const imageUrl = product.images?.[0] 
+    ? getProductImage(product.images[0], 'card')
+    : '/placeholder-product.jpg'
   
   return (
     <div className="bg-white rounded border hover:shadow-md transition-all duration-200 group">
