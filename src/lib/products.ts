@@ -12,6 +12,8 @@ export const productService = {
     if (filters.sizeName) params.append('sizeName', filters.sizeName)
     if (filters.name) params.append('name', filters.name)
     if (filters.gender) params.append('gender', filters.gender)
+    if (filters.colorId) params.append('colorId', filters.colorId)
+    if (filters.active !== undefined) params.append('active', filters.active.toString())
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
     if (filters.showAll) params.append('showAll', filters.showAll.toString())
@@ -75,6 +77,14 @@ export const productService = {
   // Get sizes for category
   getSizesForCategory: async (categoryId: string) => {
     const response = await api.get(`/product/sizes-for-category/${categoryId}`)
+    return response.data
+  },
+
+  // Delete product image
+  deleteProductImage: async (productId: string, imageUrl: string): Promise<{ message: string; remainingImages: number }> => {
+    const response = await api.delete(`/product/image/${productId}`, {
+      data: { imageUrl }
+    })
     return response.data
   },
 }

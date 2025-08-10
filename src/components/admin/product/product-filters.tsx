@@ -7,6 +7,7 @@ import { productService } from '@/lib/products'
 import { genderService } from '@/lib/genders'
 import { brandService } from '@/lib/brands'
 import { typeService } from '@/lib/types'
+import { colorService } from '@/lib/colors'
 import type { ProductFilters } from '@/types'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,6 +50,11 @@ export function ProductFilters({ onFiltersChange, currentFilters }: ProductFilte
   const { data: types } = useQuery({
     queryKey: ['types'],
     queryFn: typeService.getAll,
+  })
+
+  const { data: colors } = useQuery({
+    queryKey: ['colors'],
+    queryFn: colorService.getAll,
   })
 
   useEffect(() => {
@@ -94,7 +100,7 @@ export function ProductFilters({ onFiltersChange, currentFilters }: ProductFilte
     onFiltersChange(emptyFilters)
   }
 
-  const hasActiveFilters = localFilters.name || localFilters.categoryId || localFilters.brandName || localFilters.modelName || localFilters.gender
+  const hasActiveFilters = localFilters.name || localFilters.categoryId || localFilters.brandName || localFilters.modelName || localFilters.gender || localFilters.colorId
 
   return (
     <Card className="mb-6">
@@ -211,14 +217,31 @@ export function ProductFilters({ onFiltersChange, currentFilters }: ProductFilte
             <CustomSelect
               options={[
                 { value: '', label: 'Todos los géneros' },
-                ...(genders?.map(gender => ({
-                  value: gender._id,
-                  label: gender.name
-                })) || [])
+                { value: 'hombre', label: 'Hombre' },
+                { value: 'mujer', label: 'Mujer' },
+                { value: 'niño', label: 'Niño' },
+                { value: 'niña', label: 'Niña' }
               ]}
               value={localFilters.gender || ''}
               onChange={(value) => handleFilterChange('gender', value)}
               placeholder="Todos los géneros"
+            />
+          </div>
+
+          {/* Filtro por color */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Color</Label>
+            <CustomSelect
+              options={[
+                { value: '', label: 'Todos los colores' },
+                ...(colors?.map(color => ({
+                  value: color._id,
+                  label: color.name
+                })) || [])
+              ]}
+              value={localFilters.colorId || ''}
+              onChange={(value) => handleFilterChange('colorId', value)}
+              placeholder="Todos los colores"
             />
           </div>
         </div>

@@ -8,6 +8,7 @@ import { sizeService } from '@/lib/sizes'
 import { brandService } from '@/lib/brands'
 import { typeService } from '@/lib/types'
 import { genderService } from '@/lib/genders'
+import { colorService } from '@/lib/colors'
 import { Product, ProductStock } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CustomSelect } from '@/components/ui/custom-select'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +33,7 @@ interface EditProductDialogProps {
 }
 
 export function EditProductDialog({ open, onOpenChange, product }: EditProductDialogProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -38,6 +41,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     type_id: '',
     brand_id: '',
     gender_id: '',
+    color_id: '',
     category_id: '',
     active: true,
     discount: '',
@@ -52,15 +56,25 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
 
     setProductSizes(prev => {
       const newSizes = { ...prev }
+      const existingStock = product?.stock?.find(s => s.size_id === sizeId)
       
       if (newSizes[sizeId]) {
-        // Remove size
-        delete newSizes[sizeId]
+        // If it's in productSizes, remove it (but only if it doesn't have existing stock)
+        if (!existingStock || existingStock.quantity === 0) {
+          delete newSizes[sizeId]
+        } else {
+          // If it has existing stock, keep it but mark as not manually selected
+          newSizes[sizeId] = {
+            name: size.name,
+            quantity: existingStock.quantity,
+            selected: false
+          }
+        }
       } else {
-        // Add size with default quantity
+        // Add size with existing quantity or 0
         newSizes[sizeId] = {
           name: size.name,
-          quantity: 1,
+          quantity: existingStock?.quantity || 0,
           selected: true
         }
       }
@@ -113,6 +127,11 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     queryFn: genderService.getAll,
   })
 
+  const { data: colors } = useQuery({
+    queryKey: ['colors'],
+    queryFn: colorService.getAll,
+  })
+
   // Debug logging
   console.log('Brands:', brands, 'Loading:', brandsLoading, 'Error:', brandsError)
   console.log('Types:', types, 'Loading:', typesLoading, 'Error:', typesError)
@@ -138,7 +157,8 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
         category_id: product.category_id || '',
         active: product.active ?? true,
         discount: product.discount?.toString() || '0',
-        gender_id: product.gender_id || ''
+        gender_id: product.gender_id || '',
+        color_id: product.color_id || ''
       })
       
       // Set existing stock data ONLY on initial load
@@ -158,6 +178,11 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     }
   }, [product?._id]) // Only run when product ID changes, not on every product update
 
+  // Reset image index when product changes
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [product?._id])
+
   // Clean up invalid sizes when category changes
   useEffect(() => {
     if (!sizes || !formData.category_id) return
@@ -173,7 +198,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       })
       return cleanedSizes
     })
-  }, [formData.category_id])
+  }, [formData.category_id, sizes])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -197,22 +222,114 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       active: formData.active,
       discount: parseFloat(formData.discount),
       gender_id: formData.gender_id,
+      color_id: formData.color_id,
       stock: stockArray
     }
 
     updateMutation.mutate({ id: product._id, data: updateData })
   }
 
+  const nextImage = () => {
+    if (product?.images && currentImageIndex < product.images.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1)
+    }
+  }
+
+  const prevImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900">Editar Producto</DialogTitle>
           <p className="text-sm text-gray-600">Modifica los datos del producto</p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Images Section - Left Side */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-0">
+                <Label className="text-base font-medium mb-3 block">Imágenes del Producto</Label>
+                <div className="space-y-4">
+                  {/* Main Image Display */}
+                  <div className="relative bg-gray-50 rounded-lg overflow-hidden aspect-square">
+                    {product?.images && product.images.length > 0 ? (
+                      <>
+                        <img
+                          src={product.images[currentImageIndex]}
+                          alt={product.name}
+                          className="w-full h-full object-contain p-4"
+                        />
+                        {product.images.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={prevImage}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-1.5 rounded-full shadow-md transition-all"
+                              disabled={currentImageIndex === 0}
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={nextImage}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-1.5 rounded-full shadow-md transition-all"
+                              disabled={currentImageIndex === product.images.length - 1}
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400">
+                        <span>Sin imagen</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Image Thumbnails */}
+                  {product?.images && product.images.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {product.images.map((image, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                            index === currentImageIndex 
+                              ? 'border-blue-500 shadow-md' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <img
+                            src={image}
+                            alt={`${product.name} ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Image count indicator */}
+                  {product?.images && product.images.length > 0 && (
+                    <div className="text-center text-sm text-gray-500">
+                      Imagen {currentImageIndex + 1} de {product.images.length}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Form Fields - Right Side */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del Producto</Label>
               <Input
@@ -326,28 +443,51 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
               />
             </div>
 
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                <div>
-                  <Label htmlFor="active" className="text-sm font-medium">Estado del Producto</Label>
-                  <p className="text-xs text-gray-600">Determina si el producto está visible en la tienda</p>
+            <div className="space-y-2">
+              <Label htmlFor="color_id">Color</Label>
+              <CustomSelect
+                options={[
+                  { value: '', label: 'Sin color' },
+                  ...(colors?.map(color => ({
+                    value: color._id,
+                    label: color.name
+                  })) || [])
+                ]}
+                value={formData.color_id}
+                onChange={(value) => setFormData({ ...formData, color_id: value })}
+                placeholder="Seleccionar color"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="active">Estado del Producto</Label>
+              <div className="bg-gray-50 rounded-lg border p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500">Determina si el producto está visible en la tienda</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-medium ${
+                      formData.active ? 'text-green-600' : 'text-gray-500'
+                    }`}>
+                      {formData.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                    <Switch
+                      id="active"
+                      checked={formData.active}
+                      onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
+                      className="data-[state=checked]:bg-green-600"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <span className={`text-sm ${formData.active ? 'text-green-600' : 'text-gray-500'}`}>
-                    {formData.active ? 'Activo' : 'Inactivo'}
-                  </span>
-                  <Switch
-                    id="active"
-                    checked={formData.active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
-                  />
-                </div>
+              </div>
+            </div>
               </div>
             </div>
           </div>
 
-          {/* Sizes and Stock Management */}
-          <div className="space-y-4">
+          {/* Sizes and Stock Management - Full Width */}
+          <div className="space-y-4 mt-6 pt-6 border-t">
             <Label className="text-base font-medium">Talles y Stock</Label>
             <div className="space-y-3 max-h-40 overflow-y-auto">
               {!formData.category_id ? (
@@ -359,30 +499,66 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
                   No hay talles disponibles para esta categoría
                 </p>
               ) : (
-                sizes?.map((size) => (
-                  <div key={size._id} className={`flex items-start space-x-3 p-3 border rounded transition-colors ${productSizes[size._id] ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50'}`}>
-                    <Checkbox
-                      checked={!!productSizes[size._id]}
-                      onCheckedChange={() => handleSizeToggle(size._id)}
-                      className="h-5 w-5 mt-0.5"
-                    />
-                    <Label className="flex-1 cursor-pointer leading-relaxed" onClick={() => handleSizeToggle(size._id)}>{size.name}</Label>
-                    {productSizes[size._id] && (
-                      <div className="flex items-center space-x-2">
-                        <Label className="text-sm">Cantidad:</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={productSizes[size._id]?.quantity || ''}
-                          onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
-                          onChange={(e) => handleQuantityChange(size._id, e.target.value)}
-                          placeholder="0"
-                          className="w-20"
-                        />
+                sizes?.map((size) => {
+                  // Check if this size has stock in the product
+                  const existingStock = product?.stock?.find(s => s.size_id === size._id)
+                  const hasExistingStock = existingStock && existingStock.quantity > 0
+                  
+                  // Check if size is in productSizes (either from initial load or user selection)
+                  const isInProductSizes = !!productSizes[size._id]
+                  const isSelected = isInProductSizes || hasExistingStock
+                  
+                  // Get the current quantity
+                  const currentQuantity = productSizes[size._id]?.quantity !== undefined
+                    ? productSizes[size._id].quantity
+                    : (existingStock?.quantity || 0)
+                  
+                  return (
+                    <div 
+                      key={size._id} 
+                      className={`flex items-center p-3 border rounded-lg transition-all cursor-pointer ${
+                        isSelected 
+                          ? 'bg-green-50 border-green-300 shadow-sm' 
+                          : 'bg-white hover:bg-gray-50 border-gray-200'
+                      }`}
+                      onClick={() => handleSizeToggle(size._id)}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => handleSizeToggle(size._id)}
+                        className="h-5 w-5 flex-shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1 flex items-center justify-between ml-3">
+                        <Label className={`cursor-pointer select-none ${
+                          isSelected ? 'font-medium text-gray-900' : 'text-gray-700'
+                        }`}>
+                          {size.name}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          {isInProductSizes ? (
+                            <div className="flex items-center gap-2">
+                              <Label className="text-sm text-gray-600">Cantidad:</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={productSizes[size._id]?.quantity || ''}
+                                onChange={(e) => handleQuantityChange(size._id, e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                placeholder="0"
+                                className="w-20 h-8"
+                              />
+                            </div>
+                          ) : (
+                            <div className="px-3 py-1 bg-gray-100 rounded text-sm font-medium text-gray-700">
+                              {currentQuantity || 0}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>

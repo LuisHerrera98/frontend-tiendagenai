@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authService, User, LoginData, RegisterData } from '@/lib/auth';
 import { tenantService, Tenant } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
+import { Permission, UserRole } from '@/types/permissions';
 
 interface SimpleTenant {
   id: string;
@@ -17,6 +18,9 @@ interface AuthContextType {
   tenant: SimpleTenant | null;
   loading: boolean;
   isAuthenticated: boolean;
+  permissions: Permission[];
+  role: UserRole | null;
+  hasPermission: (permission: Permission | Permission[]) => boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<any>;
   logout: () => void;
@@ -29,6 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<SimpleTenant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [role, setRole] = useState<UserRole | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -48,6 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const user = JSON.parse(userData);
           setUser(user);
+          
+          // Configurar rol y permisos
+          if (user.role) {
+            setRole(user.role as UserRole);
+            setPermissions(user.permissions || []);
+          }
           
           // Si hay tiendas, cargar la tienda activa
           if (user.tenants && user.tenants.length > 0) {
@@ -100,6 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(response.user);
       
+      // Configurar rol y permisos
+      if (response.user.role) {
+        setRole(response.user.role as UserRole);
+        setPermissions(response.user.permissions || []);
+      }
+      
       // Redirigir al dashboard normal (sin cambiar de subdominio en desarrollo)
       router.push('/admin/dashboard');
     } catch (error) {
@@ -126,6 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setUser(null);
     setTenant(null);
+    setRole(null);
+    setPermissions([]);
     
     // Limpiar headers de axios
     authService.logout();
@@ -137,11 +157,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const hasPermission = useCallback((permission: Permission | Permission[]): boolean => {
+    if (!user || !role) return false;
+    
+    // Admin tiene todos los permisos
+    if (role === UserRole.ADMIN) return true;
+    
+    // Verificar permisos específicos
+    if (Array.isArray(permission)) {
+      return permission.some(p => permissions.includes(p));
+    }
+    
+    return permissions.includes(permission);
+  }, [user, role, permissions]);
+
   const value = {
     user,
     tenant,
     loading,
     isAuthenticated: !!user,
+    permissions,
+    role,
+    hasPermission,
     login,
     register,
     logout,

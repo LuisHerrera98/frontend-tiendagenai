@@ -31,6 +31,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useAuth } from '@/contexts/auth-context'
+import { Permission } from '@/types/permissions'
 
 function LoadingSkeleton({ className = "" }) {
   return (
@@ -318,7 +320,7 @@ function ExchangeDialog({ sale, open, setOpen }: { sale: Sale | null, open: bool
                       >
                         {product.images && product.images.length > 0 && (
                           <img 
-                            src={product.images[0].url} 
+                            src={product.images[0]} 
                             alt={product.name}
                             className="w-10 h-10 object-cover rounded"
                           />
@@ -858,7 +860,7 @@ function MassiveExchangeDialog({ transaction, open, setOpen }: {
                       >
                         {product.images && product.images.length > 0 && (
                           <img 
-                            src={product.images[0].url} 
+                            src={product.images[0]} 
                             alt={product.name}
                             className="w-8 h-8 object-cover rounded"
                           />
@@ -907,7 +909,7 @@ function MassiveExchangeDialog({ transaction, open, setOpen }: {
                 <div key={product.id} className="flex items-center space-x-3 p-2 bg-blue-50 rounded-lg">
                   {product.images && product.images.length > 0 && (
                     <img 
-                      src={product.images[0].url} 
+                      src={product.images[0]} 
                       alt={product.product_name}
                       className="w-8 h-8 object-cover rounded"
                     />
@@ -1363,7 +1365,7 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
                       >
                         {product.images && product.images.length > 0 && (
                           <img 
-                            src={product.images[0].url} 
+                            src={product.images[0]} 
                             alt={product.name}
                             className="w-10 h-10 object-cover rounded"
                           />
@@ -1661,6 +1663,13 @@ function SaleMetricCard({ title, value, description, icon: Icon, isLoading = fal
 }
 
 export default function VentasPage() {
+  const { hasPermission } = useAuth()
+  
+  // Check permissions
+  const canViewStats = hasPermission(Permission.SALES_STATS)
+  const canCreateSales = hasPermission(Permission.SALES_CREATE)
+  const canEditSales = hasPermission(Permission.SALES_EDIT)
+
   // Configurar filtro por defecto al día actual
   const getTodayDate = () => {
     const today = new Date()
@@ -1786,18 +1795,20 @@ export default function VentasPage() {
           )}
         </div>
         <div className="flex items-center gap-4">
-          <Button 
-            onClick={() => setRegisterSaleOpen(true)}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Registrar Venta
-          </Button>
+          {canCreateSales && (
+            <Button 
+              onClick={() => setRegisterSaleOpen(true)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Registrar Venta
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid gap-4 ${canViewStats ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1'}`}>
         <SaleMetricCard
           title="Total Ventas"
           value={statsData.totalSales.toString()}
@@ -1806,26 +1817,30 @@ export default function VentasPage() {
           isLoading={statsLoading}
           color="blue"
         />
-        <SaleMetricCard
-          title="Ingresos"
-          value={`$${statsData.totalRevenue.toLocaleString('es-AR')}`}
-          description="Ingresos totales"
-          icon={DollarSign}
-          isLoading={statsLoading}
-          color="green"
-        />
-        <SaleMetricCard
-          title="Ganancia"
-          value={`$${statsData.totalProfit.toLocaleString('es-AR')}`}
-          description="Ganancia neta"
-          icon={TrendingUp}
-          isLoading={statsLoading}
-          color="purple"
-        />
+        {canViewStats && (
+          <SaleMetricCard
+            title="Ingresos"
+            value={`$${statsData.totalRevenue.toLocaleString('es-AR')}`}
+            description="Ingresos totales"
+            icon={DollarSign}
+            isLoading={statsLoading}
+            color="green"
+          />
+        )}
+        {canViewStats && (
+          <SaleMetricCard
+            title="Ganancia"
+            value={`$${statsData.totalProfit.toLocaleString('es-AR')}`}
+            description="Ganancia neta"
+            icon={TrendingUp}
+            isLoading={statsLoading}
+            color="purple"
+          />
+        )}
       </div>
 
       {/* Métricas por Método de Pago */}
-      {stats?.paymentMethodBreakdown && (
+      {canViewStats && stats?.paymentMethodBreakdown && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Ventas por Método de Pago</CardTitle>
@@ -1989,21 +2004,23 @@ export default function VentasPage() {
                             </span>
                           </div>
                           <div className="flex items-center space-x-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenMassiveExchange(item)}
-                              className="bg-orange-50 hover:bg-orange-100 text-orange-600 border-orange-200 text-xs"
-                            >
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Cambio Masivo
-                            </Button>
+                            {canEditSales && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenMassiveExchange(item)}
+                                className="bg-orange-50 hover:bg-orange-100 text-orange-600 border-orange-200 text-xs"
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Cambio Masivo
+                              </Button>
+                            )}
                             <div className="text-right">
                               <div className="text-lg font-bold text-green-600">
                                 ${item.total_amount.toLocaleString('es-AR')}
                               </div>
                               <div className="text-xs text-purple-600">
-                                +${(item.total_amount - item.total_cost).toLocaleString('es-AR')}
+                                {canViewStats && `+${(item.total_amount - item.total_cost).toLocaleString('es-AR')}`}
                               </div>
                             </div>
                           </div>
@@ -2115,11 +2132,13 @@ export default function VentasPage() {
                                       </div>
                                     )}
                                   </div>
-                                  <div className="text-xs text-gray-500">
-                                    Costo: ${(sale.cost * sale.quantity).toLocaleString('es-AR')}
-                                  </div>
+                                  {canViewStats && (
+                                    <div className="text-xs text-gray-500">
+                                      Costo: ${(sale.cost * sale.quantity).toLocaleString('es-AR')}
+                                    </div>
+                                  )}
                                 </div>
-                                {(sale.exchange_type === 'normal' || sale.exchange_type === 'nueva_por_cambio') && (
+                                {canEditSales && (sale.exchange_type === 'normal' || sale.exchange_type === 'nueva_por_cambio') && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -2358,9 +2377,13 @@ export default function VentasPage() {
                           <div className={`text-xs ${
                             sale.exchange_type === 'anulada_por_cambio' ? 'text-gray-400' : 'text-gray-500'
                           }`}>
-                            Costo: <span className={`font-medium ${
-                              sale.exchange_type === 'anulada_por_cambio' ? 'line-through' : ''
-                            }`}>${sale.cost.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                            {canViewStats && (
+                              <>
+                                Costo: <span className={`font-medium ${
+                                  sale.exchange_type === 'anulada_por_cambio' ? 'line-through' : ''
+                                }`}>${sale.cost.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                              </>
+                            )}
                           </div>
                           {sale.exchange_type === 'nueva_por_cambio' && sale.original_product_info && (
                             <div className="text-xs text-green-600 font-medium">
@@ -2381,7 +2404,7 @@ export default function VentasPage() {
                           </div>
                           
                           <div className="flex items-center space-x-2">
-                            {sale.exchange_type !== 'anulada_por_cambio' && (
+                            {canViewStats && sale.exchange_type !== 'anulada_por_cambio' && (
                               <div className={`text-sm font-medium ${
                                 sale.exchange_type === 'nueva_por_cambio' ? 'text-green-600' : 'text-purple-600'
                               }`}>
@@ -2393,7 +2416,7 @@ export default function VentasPage() {
                                 Anulada
                               </div>
                             )}
-                            {(sale.exchange_type === 'normal' || sale.exchange_type === 'nueva_por_cambio') && (
+                            {canEditSales && (sale.exchange_type === 'normal' || sale.exchange_type === 'nueva_por_cambio') && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -2607,9 +2630,13 @@ export default function VentasPage() {
                           <div className={`text-xs ${
                             sale.exchange_type === 'anulada_por_cambio' ? 'text-gray-400' : 'text-gray-500'
                           }`}>
-                            Costo: <span className={`font-medium ${
-                              sale.exchange_type === 'anulada_por_cambio' ? 'line-through' : ''
-                            }`}>${sale.cost.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                            {canViewStats && (
+                              <>
+                                Costo: <span className={`font-medium ${
+                                  sale.exchange_type === 'anulada_por_cambio' ? 'line-through' : ''
+                                }`}>${sale.cost.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                              </>
+                            )}
                           </div>
                           {sale.exchange_type === 'nueva_por_cambio' && sale.original_product_info && (
                             <div className="text-xs text-gray-500">
@@ -2632,7 +2659,7 @@ export default function VentasPage() {
                           </div>
                           
                           <div className="flex items-center space-x-2">
-                            {sale.exchange_type !== 'anulada_por_cambio' && (
+                            {canViewStats && sale.exchange_type !== 'anulada_por_cambio' && (
                               <div className={`text-xs font-medium ${
                                 sale.exchange_type === 'nueva_por_cambio' ? 'text-green-600' : 'text-purple-600'
                               }`}>
@@ -2644,7 +2671,7 @@ export default function VentasPage() {
                                 Anulada
                               </div>
                             )}
-                            {(sale.exchange_type === 'normal' || sale.exchange_type === 'nueva_por_cambio') && (
+                            {canEditSales && (sale.exchange_type === 'normal' || sale.exchange_type === 'nueva_por_cambio') && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -2669,24 +2696,30 @@ export default function VentasPage() {
       </Card>
 
       {/* Modal de Registrar Venta */}
-      <RegisterSaleDialog 
-        open={registerSaleOpen} 
-        setOpen={setRegisterSaleOpen} 
-      />
+      {canCreateSales && (
+        <RegisterSaleDialog 
+          open={registerSaleOpen} 
+          setOpen={setRegisterSaleOpen} 
+        />
+      )}
 
       {/* Modal de Cambio */}
-      <ExchangeDialog 
-        sale={selectedSaleForExchange} 
-        open={exchangeDialogOpen} 
-        setOpen={setExchangeDialogOpen} 
-      />
+      {canEditSales && (
+        <ExchangeDialog 
+          sale={selectedSaleForExchange} 
+          open={exchangeDialogOpen} 
+          setOpen={setExchangeDialogOpen} 
+        />
+      )}
 
       {/* Modal de Cambio Masivo */}
-      <MassiveExchangeDialog 
-        transaction={selectedTransactionForExchange} 
-        open={massiveExchangeDialogOpen} 
-        setOpen={setMassiveExchangeDialogOpen} 
-      />
+      {canEditSales && (
+        <MassiveExchangeDialog 
+          transaction={selectedTransactionForExchange} 
+          open={massiveExchangeDialogOpen} 
+          setOpen={setMassiveExchangeDialogOpen} 
+        />
+      )}
 
       {/* Modal de Imagen */}
       <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>

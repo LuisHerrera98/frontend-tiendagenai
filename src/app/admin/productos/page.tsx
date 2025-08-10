@@ -3,33 +3,38 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ProductList } from '@/components/admin/product/product-list'
+import { ProductListWithSidebar } from '@/components/admin/product/product-list-with-sidebar'
 import { CreateProductDialog } from '@/components/admin/product/create-product-dialog'
+import { useAuth } from '@/contexts/auth-context'
+import { Permission } from '@/types/permissions'
 
 export default function ProductsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const { hasPermission } = useAuth()
+  const canCreateProducts = hasPermission(Permission.PRODUCTS_CREATE)
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
+      <div className="flex justify-between items-center mb-6 flex-shrink-0">
         <h1 className="text-3xl font-bold">Productos</h1>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Producto
-        </Button>
+        {canCreateProducts && (
+          <Button onClick={() => setShowCreateDialog(true)} className="bg-black hover:bg-gray-800">
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Producto
+          </Button>
+        )}
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <ProductList />
-        </CardContent>
-      </Card>
+      <div className="flex-1 min-h-0">
+        <ProductListWithSidebar />
+      </div>
 
-      <CreateProductDialog 
-        open={showCreateDialog} 
-        onOpenChange={setShowCreateDialog}
-      />
+      {canCreateProducts && (
+        <CreateProductDialog 
+          open={showCreateDialog} 
+          onOpenChange={setShowCreateDialog}
+        />
+      )}
     </div>
   )
 }

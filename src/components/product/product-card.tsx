@@ -27,7 +27,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {firstImage ? (
           <div className="relative w-full aspect-square">
             <Image
-              src={firstImage.url}
+              src={firstImage}
               alt={product.name}
               fill
               className="object-contain p-2"

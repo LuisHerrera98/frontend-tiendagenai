@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Permission } from '@/types/permissions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
@@ -7,6 +8,7 @@ export interface User {
   email: string;
   name: string;
   role: string;
+  permissions?: Permission[];
   tenantId?: string;
   currentTenantId?: string;
   tenants?: Array<{
@@ -15,6 +17,12 @@ export interface User {
     storeName: string;
     isActive: boolean;
   }>;
+  phone?: string;
+  address?: string;
+  employeeCode?: string;
+  active?: boolean;
+  lastLogin?: string;
+  createdBy?: string;
 }
 
 export interface RegisterData {

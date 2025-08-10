@@ -37,7 +37,7 @@ export function ProductListMobile({
                   className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
                 >
                   <img
-                    src={typeof product.images[0] === 'string' ? product.images[0] : product.images[0].url}
+                    src={product.images[0]}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />

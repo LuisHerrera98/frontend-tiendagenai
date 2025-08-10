@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { productService } from '@/lib/products'
 import { genderService } from '@/lib/genders'
 import { brandService } from '@/lib/brands'
@@ -29,6 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useAuth } from '@/contexts/auth-context'
+import { Permission } from '@/types/permissions'
 
 export function ProductList() {
   const [filters, setFilters] = useState<ProductFilters>({ page: 1, limit: 10, showAll: true })
@@ -37,6 +38,13 @@ export function ProductList() {
   const [viewProduct, setViewProduct] = useState<Product | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const router = useRouter()
+  const { hasPermission } = useAuth()
+
+  // Check permissions
+  const canViewCosts = hasPermission(Permission.PRODUCTS_COSTS)
+  const canEditProducts = hasPermission(Permission.PRODUCTS_EDIT)
+  const canDeleteProducts = hasPermission(Permission.PRODUCTS_DELETE)
+  const canCreateProducts = hasPermission(Permission.PRODUCTS_CREATE)
 
   const nextImage = () => {
     if (selectedProduct?.images && currentImageIndex < selectedProduct.images.length - 1) {
@@ -103,7 +111,9 @@ export function ProductList() {
         />
         <div className="text-center py-8">
           <p className="text-gray-500 mb-4">No hay productos registrados</p>
-          <p className="text-sm text-gray-400">Haz clic en "Nuevo Producto" para agregar el primer producto</p>
+          {canCreateProducts && (
+            <p className="text-sm text-gray-400">Haz clic en "Nuevo Producto" para agregar el primer producto</p>
+          )}
         </div>
       </div>
     )
@@ -147,6 +157,8 @@ export function ProductList() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Género</TableHead>
                   <TableHead>Precio</TableHead>
+                  {canViewCosts && <TableHead>Costo</TableHead>}
+                  {canViewCosts && <TableHead>Ganancia</TableHead>}
                   <TableHead>Estado</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Acciones</TableHead>
@@ -166,12 +178,10 @@ export function ProductList() {
                         }}
                       >
                         {product.images && product.images.length > 0 ? (
-                          <Image
-                            src={product.images[0].url}
+                          <img
+                            src={product.images[0]}
                             alt={product.name}
-                            fill
-                            className="object-cover"
-                            sizes="70px"
+                            className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full text-gray-400 text-xs bg-gray-50 border-2 border-dashed border-gray-200">
@@ -204,6 +214,18 @@ export function ProductList() {
                       })()}
                     </TableCell>
                     <TableCell>${Math.floor(product.price) === product.price ? product.price : product.price.toFixed(2)}</TableCell>
+                    {canViewCosts && (
+                      <TableCell>
+                        ${Math.floor(product.cost || 0) === (product.cost || 0) ? (product.cost || 0) : (product.cost || 0).toFixed(2)}
+                      </TableCell>
+                    )}
+                    {canViewCosts && (
+                      <TableCell>
+                        <span className="font-medium text-green-600">
+                          ${Math.floor((product.price - (product.cost || 0))) === (product.price - (product.cost || 0)) ? (product.price - (product.cost || 0)) : (product.price - (product.cost || 0)).toFixed(2)}
+                        </span>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Badge variant={product.active ? 'default' : 'secondary'}>
                         {product.active ? 'Activo' : 'Inactivo'}
@@ -224,16 +246,20 @@ export function ProductList() {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => router.push(`/admin/productos/editar/${product._id}`)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {canEditProducts && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => router.push(`/admin/productos/editar/${product._id}`)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canDeleteProducts && (
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -306,12 +332,10 @@ export function ProductList() {
             <div className="relative w-full h-96 bg-gray-50 rounded-lg overflow-hidden">
               {selectedProduct?.images && selectedProduct.images.length > 0 && (
                 <>
-                  <Image
-                    src={selectedProduct.images[currentImageIndex].url}
+                  <img
+                    src={selectedProduct.images[currentImageIndex]}
                     alt={`${selectedProduct.name} - Imagen ${currentImageIndex + 1}`}
-                    fill
-                    className="object-contain p-4"
-                    sizes="(max-width: 768px) 100vw, 800px"
+                    className="w-full h-full object-contain p-4"
                   />
 
                   {/* Navigation Arrows - Only show if more than 1 image */}

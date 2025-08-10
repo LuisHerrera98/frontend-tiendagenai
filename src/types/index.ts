@@ -7,17 +7,20 @@ export interface Product {
   brand_id?: string
   brand_name?: string
   model_name?: string
+  color_id?: string
   cost: number
   price: number
   discount: number
   active: boolean
   gender_id?: string
-  images: ProductImage[]
+  genders?: string[]  // Array de géneros
+  images: string[]  // Ahora son URLs directas
   stock: ProductStock[]
   createdAt: string
   updatedAt: string
 }
 
+// Este tipo se usa para las ventas (Sales)
 export interface ProductImage {
   url: string
   publicId: string
@@ -52,6 +55,13 @@ export interface Brand {
   updatedAt: string
 }
 
+export interface Color {
+  _id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Sell {
   _id: string
   product_id: string
@@ -72,6 +82,8 @@ export interface CreateProductDto {
   brand_id?: string
   type_id?: string
   gender_id?: string
+  genders?: string[]
+  color_id?: string
   cost: number
   price: number
   discount?: number
@@ -89,6 +101,8 @@ export interface UpdateProductDto {
   brand_id?: string
   type_id?: string
   gender_id?: string
+  genders?: string[]
+  color_id?: string
   cost?: number
   price?: number
   discount?: number
@@ -105,6 +119,8 @@ export interface ProductFilters {
   sizeName?: string
   name?: string
   gender?: 'hombre' | 'mujer' | 'unisex'
+  colorId?: string
+  active?: boolean // Filtro de estado activo/inactivo
   page?: number
   limit?: number
   showAll?: boolean // Para mostrar productos inactivos en admin

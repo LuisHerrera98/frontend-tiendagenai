@@ -14,30 +14,51 @@ import {
   Grid3X3,
   UserCheck,
   Settings,
-  ClipboardList
+  ClipboardList,
+  Palette,
+  Shield
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
+import { Permission } from '@/types/permissions'
 
 interface AdminSidebarProps {
   isOpen?: boolean
   onClose?: () => void
 }
 
-const navigation = [
-  { name: 'Inicio', href: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'Productos', href: '/admin/productos', icon: Package },
-  { name: 'Categorías', href: '/admin/categorias', icon: Tags },
-  { name: 'Tallas', href: '/admin/tallas', icon: Ruler },
-  { name: 'Marcas', href: '/admin/marcas', icon: Users },
-  { name: 'Tipos', href: '/admin/tipos', icon: Grid3X3 },
-  { name: 'Géneros', href: '/admin/generos', icon: UserCheck },
-  { name: 'Ventas', href: '/admin/ventas', icon: ShoppingCart },
-  { name: 'Pedidos', href: '/admin/pedidos', icon: ClipboardList },
-  { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  permission?: Permission | Permission[];
+  disabled?: boolean;
+}
+
+const navigation: NavItem[] = [
+  { name: 'Inicio', href: '/admin/dashboard', icon: LayoutDashboard, permission: Permission.DASHBOARD_VIEW },
+  { name: 'Productos', href: '/admin/productos', icon: Package, permission: Permission.PRODUCTS_VIEW },
+  { name: 'Categorías', href: '/admin/categorias', icon: Tags, permission: [Permission.CATEGORIES_VIEW, Permission.CATEGORIES_MANAGE] },
+  { name: 'Tallas', href: '/admin/tallas', icon: Ruler, permission: [Permission.SIZES_VIEW, Permission.SIZES_MANAGE] },
+  { name: 'Marcas', href: '/admin/marcas', icon: Users, permission: [Permission.BRANDS_VIEW, Permission.BRANDS_MANAGE] },
+  { name: 'Tipos', href: '/admin/tipos', icon: Grid3X3, permission: [Permission.TYPES_VIEW, Permission.TYPES_MANAGE] },
+  { name: 'Géneros', href: '/admin/generos', icon: UserCheck, permission: [Permission.GENDERS_VIEW, Permission.GENDERS_MANAGE] },
+  { name: 'Colores', href: '/admin/colores', icon: Palette, permission: [Permission.COLORS_VIEW, Permission.COLORS_MANAGE] },
+  { name: 'Ventas', href: '/admin/ventas', icon: ShoppingCart, permission: Permission.SALES_VIEW },
+  { name: 'Pedidos', href: '/admin/pedidos', icon: ClipboardList, permission: Permission.ORDERS_VIEW },
+  { name: 'Usuarios', href: '/admin/usuarios', icon: Shield, permission: Permission.USERS_VIEW, disabled: true },
+  { name: 'Configuración', href: '/admin/configuracion', icon: Settings, permission: Permission.SETTINGS_VIEW },
 ]
 
 export function AdminSidebar({ isOpen = true, onClose }: AdminSidebarProps) {
   const pathname = usePathname()
+  const { hasPermission } = useAuth()
+  
+  // Filtrar navegación según permisos
+  const filteredNavigation = navigation.filter(item => {
+    if (!item.permission) return true;
+    return hasPermission(item.permission);
+  })
 
   const handleLogout = () => {
     localStorage.clear()
@@ -69,8 +90,22 @@ export function AdminSidebar({ isOpen = true, onClose }: AdminSidebarProps) {
         </div>
         
         <nav className="flex-1 px-2 py-4 space-y-2">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const isActive = pathname === item.href
+            const isDisabled = item.disabled
+            
+            if (isDisabled) {
+              return (
+                <div
+                  key={item.name}
+                  className="group flex items-center px-2 py-2 text-sm font-medium rounded-md cursor-not-allowed opacity-50 text-gray-500"
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </div>
+              )
+            }
+            
             return (
               <Link
                 key={item.name}

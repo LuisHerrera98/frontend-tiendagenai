@@ -39,9 +39,12 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
     <div className="fixed inset-0 z-50">
       <div 
         className="fixed inset-0 bg-black/80" 
-        onClick={() => onOpenChange?.(false)}
+        aria-hidden="true"
       />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
+      <div 
+        className="fixed inset-0 flex items-center justify-center p-4"
+        onClick={() => onOpenChange?.(false)}
+      >
         {children}
       </div>
     </div>
@@ -53,7 +56,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     <div
       ref={ref}
       className={cn(
-        "relative z-50 grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg rounded-lg",
+        "relative z-50 grid w-full max-w-lg gap-4 border bg-white p-6 shadow-lg rounded-lg",
         className
       )}
       onClick={(e) => e.stopPropagation()}

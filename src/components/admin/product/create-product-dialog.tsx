@@ -11,6 +11,7 @@ import { sizeService } from '@/lib/sizes'
 import { brandService } from '@/lib/brands'
 import { typeService } from '@/lib/types'
 import { genderService } from '@/lib/genders'
+import { colorService } from '@/lib/colors'
 import { CreateProductDto } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,9 +19,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CustomSelect } from '@/components/ui/custom-select'
-import { X } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import { HybridCloudinaryUpload } from './hybrid-cloudinary-upload'
+import { DeferredCloudinaryUpload, uploadToCloudinary } from './deferred-cloudinary-upload'
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,8 @@ const productSchema = z.object({
   discount: z.number().min(0).max(100).optional(),
   active: z.boolean(),
   gender_id: z.string().optional(),
+  genders: z.array(z.string()).optional(),
+  color_id: z.string().optional(),
 })
 
 type ProductFormData = {
@@ -59,6 +62,8 @@ type ProductFormData = {
   discount?: number
   active: boolean
   gender_id?: string
+  genders?: string[]
+  color_id?: string
 }
 
 interface CreateProductDialogProps {
@@ -67,7 +72,8 @@ interface CreateProductDialogProps {
 }
 
 export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogProps) {
-  const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([])
+  const [uploadingImages, setUploadingImages] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
   const queryClient = useQueryClient()
@@ -84,6 +90,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       discount: '' as any,
       active: true,
       gender_id: '',
+      genders: [],
+      color_id: '',
     },
   })
 
@@ -115,6 +123,11 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
     queryFn: genderService.getAll,
   })
 
+  const { data: colors } = useQuery({
+    queryKey: ['colors'],
+    queryFn: colorService.getAll,
+  })
+
   // Limpiar talles seleccionados cuando cambie la categoría
   useEffect(() => {
     setSelectedSizes([])
@@ -128,7 +141,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       queryClient.invalidateQueries({ queryKey: ['products'] })
       onOpenChange(false)
       form.reset()
-      setImageUrls([])
+      setSelectedImageFiles([])
       setSelectedSizes([])
       setSizeQuantities({})
     },
@@ -138,27 +151,57 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
     },
   })
 
-  const onSubmit = (data: ProductFormData) => {
-    const stock = selectedSizes.map(sizeId => {
-      const size = sizes?.find(s => s._id === sizeId)
-      return {
-        size_id: sizeId,
-        size_name: size?.name || '',
-        quantity: typeof sizeQuantities[sizeId] === 'string' ? parseInt(sizeQuantities[sizeId]) || 0 : sizeQuantities[sizeId] || 0,
-        available: true,
-      }
-    })
-
-    const productData: CreateProductDto = {
-      ...data,
-      cost: typeof data.cost === 'string' ? parseFloat(data.cost) || 0 : data.cost,
-      price: typeof data.price === 'string' ? parseFloat(data.price) || 0 : data.price,
-      discount: typeof data.discount === 'string' ? parseFloat(data.discount) || 0 : data.discount,
-      stock,
-      images: imageUrls,
-    }
+  const onSubmit = async (data: ProductFormData) => {
+    // Primero subir las imágenes a Cloudinary
+    setUploadingImages(true)
     
-    mutation.mutate(productData)
+    try {
+      const uploadedUrls: string[] = []
+      
+      for (const file of selectedImageFiles) {
+        try {
+          const url = await uploadToCloudinary(file)
+          uploadedUrls.push(url)
+        } catch (error) {
+          console.error(`Error subiendo ${file.name}:`, error)
+        }
+      }
+      
+      if (selectedImageFiles.length > 0 && uploadedUrls.length === 0) {
+        alert('No se pudieron subir las imágenes. Por favor intenta de nuevo.')
+        setUploadingImages(false)
+        return
+      }
+      
+      const stock = selectedSizes.map(sizeId => {
+        const size = sizes?.find(s => s._id === sizeId)
+        return {
+          size_id: sizeId,
+          size_name: size?.name || '',
+          quantity: typeof sizeQuantities[sizeId] === 'string' ? parseInt(sizeQuantities[sizeId]) || 0 : sizeQuantities[sizeId] || 0,
+          available: true,
+        }
+      })
+
+      const productData: CreateProductDto = {
+        ...data,
+        cost: typeof data.cost === 'string' ? parseFloat(data.cost) || 0 : data.cost,
+        price: typeof data.price === 'string' ? parseFloat(data.price) || 0 : data.price,
+        discount: typeof data.discount === 'string' ? parseFloat(data.discount) || 0 : data.discount,
+        stock,
+        images: uploadedUrls,
+        genders: data.genders || [],
+        color_id: data.color_id,
+        active: data.active !== undefined ? data.active : true, // Asegurar que active se envíe
+      }
+      
+      mutation.mutate(productData)
+    } catch (error) {
+      console.error('Error al procesar el producto:', error)
+      alert('Error al crear el producto')
+    } finally {
+      setUploadingImages(false)
+    }
   }
 
   const handleSizeToggle = (sizeId: string) => {
@@ -196,8 +239,10 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       discount: '' as any,
       active: true,
       gender_id: '',
+      genders: [],
+      color_id: '',
     })
-    setImageUrls([])
+    setSelectedImageFiles([])
     setSelectedSizes([])
     setSizeQuantities({})
   }
@@ -316,22 +361,22 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
 
               <FormField
                 control={form.control}
-                name="gender_id"
+                name="color_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Género</FormLabel>
+                    <FormLabel>Color</FormLabel>
                     <FormControl>
                       <CustomSelect
                         options={[
-                          { value: '', label: 'Seleccionar género' },
-                          ...(genders?.map(gender => ({
-                            value: gender._id,
-                            label: gender.name
+                          { value: '', label: 'Sin color' },
+                          ...(colors?.map(color => ({
+                            value: color._id,
+                            label: color.name
                           })) || [])
                         ]}
                         value={field.value || ''}
                         onChange={field.onChange}
-                        placeholder="Seleccionar género"
+                        placeholder="Seleccionar color"
                       />
                     </FormControl>
                     <FormMessage />
@@ -339,6 +384,36 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="genders"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Géneros (Selección múltiple)</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-wrap gap-3">
+                      {['hombre', 'mujer', 'niño', 'niña'].map((gender) => (
+                        <label key={gender} className="flex items-center space-x-2 cursor-pointer">
+                          <Checkbox
+                            checked={(field.value || []).includes(gender)}
+                            onCheckedChange={(checked) => {
+                              const current = field.value || []
+                              const updated = checked
+                                ? [...current, gender]
+                                : current.filter(g => g !== gender)
+                              field.onChange(updated)
+                            }}
+                          />
+                          <span className="text-sm capitalize">{gender}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-3 gap-4">
               <FormField
@@ -438,13 +513,13 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
             <div>
               <Label className="text-base font-medium">Imágenes del Producto</Label>
               <div className="mt-2">
-                <HybridCloudinaryUpload
-                  onUpload={(urls) => {
-                    setImageUrls(urls)
+                <DeferredCloudinaryUpload
+                  onImagesSelected={(files) => {
+                    setSelectedImageFiles(files)
                   }}
                   multiple={true}
                   maxFiles={5}
-                  buttonText="Subir imágenes"
+                  buttonText="Seleccionar imágenes"
                 />
               </div>
             </div>
@@ -493,8 +568,9 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Creando...' : 'Crear Producto'}
+              <Button type="submit" disabled={mutation.isPending || uploadingImages}>
+                {(uploadingImages || mutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {uploadingImages ? 'Subiendo imágenes...' : mutation.isPending ? 'Creando...' : 'Crear Producto'}
               </Button>
             </div>
           </form>

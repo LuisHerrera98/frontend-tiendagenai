@@ -7,11 +7,11 @@ import { sizeService } from '@/lib/sizes'
 import { brandService } from '@/lib/brands'
 import { typeService } from '@/lib/types'
 import { genderService } from '@/lib/genders'
+import { colorService } from '@/lib/colors'
 import { Product } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import Image from 'next/image'
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,11 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
     queryFn: genderService.getAll,
   })
 
+  const { data: colors } = useQuery({
+    queryKey: ['colors'],
+    queryFn: colorService.getAll,
+  })
+
   useEffect(() => {
     setCurrentImageIndex(0)
   }, [product])
@@ -58,7 +63,10 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
   const brand = brands?.find(b => b._id === product.brand_id)
   const type = types?.find(t => t._id === product.type_id)
   const gender = genders?.find(g => g._id === product.gender_id)
+  const color = colors?.find(c => c._id === product.color_id)
   const totalStock = product.stock?.reduce((total, item) => total + item.quantity, 0) || 0
+  const profit = product.price - product.cost
+  const profitPercentage = product.cost > 0 ? (profit / product.cost) * 100 : 0
 
   const nextImage = () => {
     if (product.images && currentImageIndex < product.images.length - 1) {
@@ -74,7 +82,7 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900">Detalles del Producto</DialogTitle>
           <p className="text-sm text-gray-600">Vista completa del producto #{product.code}</p>
@@ -86,11 +94,10 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
             <div className="relative bg-gray-50 rounded-lg overflow-hidden aspect-square">
               {product.images && product.images.length > 0 ? (
                 <>
-                  <Image
-                    src={product.images[currentImageIndex].url}
+                  <img
+                    src={product.images[currentImageIndex]}
                     alt={product.name}
-                    fill
-                    className="object-contain p-4"
+                    className="w-full h-full object-contain p-4"
                   />
                   {product.images.length > 1 && (
                     <>
@@ -154,47 +161,89 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
                 </div>
                 <div>
                   <Label className="text-sm text-gray-600">Marca</Label>
-                  <p className="font-medium">{brand?.name || '-'}</p>
+                  <p className="font-medium">{brand?.name || product.brand_name || '-'}</p>
                 </div>
                 <div>
                   <Label className="text-sm text-gray-600">Tipo</Label>
-                  <p className="font-medium">{type?.name || '-'}</p>
+                  <p className="font-medium">{type?.name || product.model_name || '-'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm text-gray-600">Género</Label>
-                  <Badge variant="outline" className={`${
-                    gender?.name.toLowerCase().includes('hombre') || gender?.name.toLowerCase().includes('masculino') ? 'border-blue-200 text-blue-700 bg-blue-50' :
-                    gender?.name.toLowerCase().includes('mujer') || gender?.name.toLowerCase().includes('femenino') ? 'border-pink-200 text-pink-700 bg-pink-50' :
-                    gender?.name.toLowerCase().includes('niño') ? 'border-cyan-200 text-cyan-700 bg-cyan-50' :
-                    gender?.name.toLowerCase().includes('niña') ? 'border-purple-200 text-purple-700 bg-purple-50' :
-                    'border-gray-200 text-gray-700 bg-gray-50'
-                  }`}>
-                    {gender?.name || '-'}
-                  </Badge>
+                  <Label className="text-sm text-gray-600">Color</Label>
+                  <p className="font-medium">{color?.name || '-'}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <Label className="text-sm text-gray-600">Precio</Label>
-                  <p className="text-lg font-bold text-green-600">
-                    ${Math.floor(product.price) === product.price ? product.price : product.price.toFixed(2)}
-                  </p>
-                  {product.discount > 0 && (
-                    <p className="text-sm text-gray-500 line-through">
-                      ${(product.price / (1 - product.discount / 100)).toFixed(2)}
-                    </p>
+              <div>
+                <Label className="text-sm text-gray-600 mb-2 block">Géneros</Label>
+                <div className="flex flex-wrap gap-2">
+                  {product.genders && product.genders.length > 0 ? (
+                    product.genders.map((g, index) => (
+                      <Badge key={index} variant="outline" className={`${
+                        g === 'hombre' ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                        g === 'mujer' ? 'border-pink-200 text-pink-700 bg-pink-50' :
+                        g === 'niño' ? 'border-cyan-200 text-cyan-700 bg-cyan-50' :
+                        g === 'niña' ? 'border-purple-200 text-purple-700 bg-purple-50' :
+                        'border-gray-200 text-gray-700 bg-gray-50'
+                      } capitalize`}>
+                        {g}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">Sin género especificado</span>
                   )}
                 </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Costo</Label>
-                  <p className="text-lg font-semibold">
-                    ${Math.floor(product.cost) === product.cost ? product.cost : product.cost.toFixed(2)}
-                  </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                  <div>
+                    <Label className="text-sm text-gray-600">Precio de Venta</Label>
+                    <p className="text-2xl font-bold text-blue-600">
+                      ${Math.floor(product.price) === product.price ? product.price.toLocaleString() : product.price.toFixed(2)}
+                    </p>
+                    {product.discount > 0 && (
+                      <p className="text-sm text-gray-500 line-through">
+                        ${(product.price / (1 - product.discount / 100)).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-600">Stock Total</Label>
+                    <p className={`text-2xl font-bold ${
+                      totalStock > 10 ? 'text-green-600' : 
+                      totalStock > 0 ? 'text-amber-600' : 
+                      'text-red-600'
+                    }`}>
+                      {totalStock} <span className="text-sm font-normal">unidades</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm text-gray-600">Stock Total</Label>
-                  <p className="text-lg font-semibold">{totalStock}</p>
+
+                <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <Label className="text-sm text-gray-600">Costo</Label>
+                    <p className="text-lg font-semibold">
+                      ${Math.floor(product.cost) === product.cost ? product.cost.toLocaleString() : product.cost.toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-600">Ganancia</Label>
+                    <p className={`text-lg font-semibold ${
+                      profit > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      ${Math.floor(profit) === profit ? profit.toLocaleString() : profit.toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-600">Margen</Label>
+                    <p className={`text-lg font-semibold ${
+                      profitPercentage > 30 ? 'text-green-600' : 
+                      profitPercentage > 15 ? 'text-amber-600' : 
+                      'text-red-600'
+                    }`}>
+                      {profitPercentage.toFixed(1)}%
+                    </p>
+                  </div>
                 </div>
               </div>
 

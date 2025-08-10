@@ -8,6 +8,7 @@
 - **Autenticación**: JWT con localStorage (NO cookies)
 - **Gestión de Estado**: React Context + TanStack Query
 - **Notificaciones**: react-hot-toast
+- **Imágenes**: Cloudinary (upload directo desde frontend)
 - **Gestión de Procesos**: PM2
 - **CI/CD**: GitHub Actions
 - **Infraestructura**: AWS EC2, Nginx con SSL
@@ -16,6 +17,54 @@
 - **API**: https://api.tiendagenai.com
 - **Admin Panel**: https://tiendagenai.com (sin subdominio)
 - **Tiendas Públicas**: https://*.tiendagenai.com (con subdominios)
+
+## 🖼️ Sistema de Imágenes con Cloudinary
+
+### Configuración Actual
+- **Upload directo desde frontend** a Cloudinary
+- **NO pasa por el backend** (más rápido y eficiente)
+- Las imágenes se guardan como **strings directos** (URLs), no objetos
+
+### Credenciales de Cloudinary
+```env
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dwkwu8adz
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=ml_default
+```
+
+### ⚠️ IMPORTANTE: Configuración del Upload Preset
+Para que funcione el upload de imágenes:
+1. Ir a https://console.cloudinary.com/settings/upload
+2. Buscar "Upload presets"
+3. Verificar que `ml_default` esté configurado como **UNSIGNED**
+4. Si está como SIGNED, cambiarlo a UNSIGNED y guardar
+
+### Componentes de Upload
+- **DeferredCloudinaryUpload**: Upload diferido - selecciona archivos localmente y sube solo al confirmar
+- **DirectCloudinaryUpload**: Upload directo con selector nativo de archivos (deprecado)
+- **ImageGalleryViewer**: Visualizador simple de imágenes para edición de productos
+- **cloudinary-transforms.ts**: Transformaciones de URL en frontend
+- **cloudinary-utils.ts**: Utilidades para manejo de imágenes
+
+### Sistema de Upload Diferido (Enero 2025)
+- Las imágenes se previsualizan localmente usando `URL.createObjectURL()`
+- Solo se suben a Cloudinary cuando se confirma la creación del producto
+- Evita desperdicio de almacenamiento si se cancela la operación
+- Muestra estado "Subiendo imágenes..." durante el upload
+
+### Estructura de Datos de Producto
+```typescript
+interface Product {
+  // ... otros campos
+  images: string[]  // URLs directas, NO objetos con {url, publicId}
+  active: boolean   // Por defecto true al crear
+}
+```
+
+### Borrado de Imágenes
+- **Endpoint implementado en backend**: `DELETE /api/product/image/:productId`
+- El backend extrae el publicId de la URL y borra en Cloudinary
+- Maneja tanto formato antiguo (objetos) como nuevo (strings)
+- **Nota**: Sistema de borrado temporalmente deshabilitado en frontend (Enero 2025)
 
 ## 🔐 Sistema de Autenticación Multi-Tenant
 
@@ -84,14 +133,14 @@ frontend-ecommerce-test/
 │   │   │   ├── marcas/        # Gestión de marcas
 │   │   │   ├── tipos/         # Gestión de tipos
 │   │   │   ├── generos/       # Gestión de géneros
-│   │   │   ├── pedidos/       # Gestión de pedidos (NUEVO)
-│   │   │   └── configuracion/ # Configuración de tienda (NUEVO)
+│   │   │   ├── pedidos/       # Gestión de pedidos
+│   │   │   └── configuracion/ # Configuración de tienda
 │   │   ├── auth/              # Páginas de autenticación
 │   │   │   ├── login/         # Login
 │   │   │   ├── register/      # Registro con creación de tenant
 │   │   │   └── verify-email/  # Verificación de email
 │   │   ├── landing/           # Landing page
-│   │   └── store/             # Tienda pública (NUEVO)
+│   │   └── store/             # Tienda pública
 │   │       └── [subdomain]/   # Rutas dinámicas por subdominio
 │   │           ├── page.tsx           # Página principal
 │   │           ├── producto/[id]/     # Detalle de producto
@@ -99,28 +148,35 @@ frontend-ecommerce-test/
 │   │           ├── carrito/          # Carrito de compras
 │   │           ├── checkout/         # Proceso de compra
 │   │           ├── pedido-confirmado/ # Confirmación de pedido
+│   │           ├── tracking/         # Seguimiento de pedidos
 │   │           └── contacto/         # Página de contacto
 │   ├── components/            # Componentes reutilizables
 │   │   ├── ui/               # Componentes de UI base
 │   │   ├── admin/            # Componentes del admin
-│   │   ├── product/          # Componentes de productos
-│   │   └── store/            # Componentes de la tienda (NUEVO)
+│   │   │   └── product/      # Componentes de productos
+│   │   │       ├── direct-cloudinary-upload.tsx  # Upload directo de imágenes
+│   │   │       ├── product-list.tsx             # Lista de productos
+│   │   │       └── create-product-dialog.tsx    # Modal de crear producto
+│   │   └── store/            # Componentes de la tienda
 │   │       ├── store-layout.tsx      # Layout principal
-│   │       ├── store-header.tsx      # Header con carrito
+│   │       ├── store-header.tsx      # Header con carrito (URLs corregidas)
 │   │       ├── store-footer.tsx      # Footer con redes sociales
 │   │       └── whatsapp-button.tsx   # Botón flotante WhatsApp
 │   ├── contexts/             # Contextos de React
 │   │   ├── auth-context.tsx  # Contexto de autenticación
-│   │   └── cart-context.tsx  # Contexto del carrito (NUEVO)
+│   │   └── cart-context.tsx  # Contexto del carrito
 │   ├── lib/                  # Servicios y utilidades
 │   │   ├── auth.ts          # Servicio de autenticación
 │   │   ├── tenant.ts        # Servicio de tenants
 │   │   ├── products.ts      # Servicio de productos
-│   │   └── utils.ts         # Utilidades (incluye formatDate)
+│   │   ├── cloudinary-transforms.ts  # Transformaciones de imágenes
+│   │   ├── cloudinary-utils.ts      # Utilidades de Cloudinary
+│   │   └── utils.ts         # Utilidades generales
 │   └── types/               # Definiciones de TypeScript
-│       └── index.ts         # Tipos e interfaces
+│       └── index.ts         # Tipos e interfaces (images como string[])
 ├── .github/workflows/       # CI/CD con GitHub Actions
 │   └── deploy-frontend.yml  # Workflow de deploy
+├── next.config.ts          # Configuración de Next.js (CSP actualizado)
 └── .env.local              # Variables de entorno (local)
 ```
 
@@ -142,10 +198,14 @@ El archivo `.github/workflows/deploy-frontend.yml` automatiza el deployment:
   ```
   NEXT_PUBLIC_API_URL=http://localhost:3000/api
   NEXT_PUBLIC_DOMAIN=localhost:3001
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dwkwu8adz
+  NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=ml_default
   ```
 - **Producción**: Se genera automáticamente
   ```
   NEXT_PUBLIC_API_URL=https://api.tiendagenai.com/api
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dwkwu8adz
+  NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=ml_default
   ```
 
 ### Comandos de Build y Deploy
@@ -162,6 +222,13 @@ npm start
 git push origin main
 ```
 
+### Secrets en GitHub Actions
+Agregar en Settings → Secrets:
+- `EC2_HOST`: IP del servidor
+- `EC2_SSH_KEY`: Clave SSH privada
+- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`: dwkwu8adz
+- `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`: ml_default
+
 ## 🎨 Páginas del Admin Panel
 
 ### Dashboard (`/admin/dashboard`)
@@ -170,16 +237,16 @@ git push origin main
 
 ### Productos (`/admin/productos`)
 - CRUD completo de productos
-- Gestión de imágenes con Cloudinary
+- Upload directo de imágenes a Cloudinary
+- Las imágenes se muestran desde URLs directas
 - Stock por tallas
 - Filtros avanzados
 
-### Tallas (`/admin/tallas`) - REDISEÑADO
+### Tallas (`/admin/tallas`)
 - Vista agrupada por categorías
 - Diseño de cajitas negras compactas
 - Acciones de editar/eliminar en hover
-- **IMPORTANTE**: Las tallas se obtienen separadas de las categorías y se hace el match en frontend
-- No depende del populate del backend
+- Las tallas se obtienen separadas de las categorías y se hace el match en frontend
 
 ### Categorías, Marcas, Tipos, Géneros
 - CRUD básico para cada entidad
@@ -190,16 +257,18 @@ git push origin main
 - Métricas en tiempo real
 - Gestión de cambios masivos
 
-### Pedidos (`/admin/pedidos`) - NUEVO
+### Pedidos (`/admin/pedidos`)
 - Lista de pedidos con filtros por estado
 - Estadísticas en tiempo real
 - Vista expandible con detalles del pedido
-- Cambio de estados (pendiente → confirmado → preparando → listo → entregado)
+- Cambio de estados simplificado a 4: Pendiente → Armado → Entregado (+ Cancelado)
 - Información del cliente y productos
+- Botones de WhatsApp/llamada cuando el pedido está listo
 
-### Configuración (`/admin/configuracion`) - NUEVO
+### Configuración (`/admin/configuracion`)
 - Configuración de información de contacto
 - Gestión de redes sociales (Instagram, Facebook, WhatsApp)
+- Toggle para habilitar/deshabilitar botón de WhatsApp
 - Personalización de colores de la tienda
 - Configuración de moneda y zona horaria
 
@@ -219,14 +288,23 @@ git push origin main
   - Información completa del producto
 - **Carrito**: Vista detallada con controles de cantidad
 - **Checkout**: Formulario de datos del cliente
-- **Confirmación**: Página de pedido confirmado
-- **Contacto**: Información de la tienda con formulario
+- **Confirmación**: Página de pedido confirmado con link a tracking
+- **Tracking**: Sistema de seguimiento de pedidos sin backend
+- **Contacto**: Información de la tienda (sin formulario)
+
+### Sistema de Tracking de Pedidos
+- Búsqueda por número de orden
+- Persistencia en localStorage
+- Estados visuales con barra de progreso
+- Botones de WhatsApp/llamada cuando está listo
+- Funciona offline sin necesidad de backend
 
 ### Componentes de la Tienda
 - **StoreLayout**: Layout principal con header, footer y WhatsApp button
 - **StoreHeader**: Navegación con contador de items en carrito
-- **StoreFooter**: Información y redes sociales configurables
-- **WhatsAppButton**: Botón flotante (solo visible si está configurado)
+  - **CORREGIDO**: Enlaces ahora usan `/store/${subdomain}/` correctamente
+- **StoreFooter**: Información y redes sociales configurables (altura reducida)
+- **WhatsAppButton**: Botón flotante (solo visible si está habilitado en configuración)
 
 ## 🔧 Componentes Importantes
 
@@ -234,7 +312,7 @@ git push origin main
 - Selector de tienda en el header
 - Actualiza localStorage cuando se cambia de tienda
 - Sincroniza con el usuario en localStorage
-- **URLs corregidas**: Evita doble `/api` en las llamadas
+- URLs corregidas: Evita doble `/api` en las llamadas
 
 ### AdminLayout (`/app/admin/layout.tsx`)
 - Verifica autenticación con `useAuth()`
@@ -242,68 +320,75 @@ git push origin main
 - NO usa el antiguo sistema de admin login con contraseña
 - Incluye `Toaster` para notificaciones react-hot-toast
 
-### CartContext (`/contexts/cart-context.tsx`) - NUEVO
+### CartContext (`/contexts/cart-context.tsx`)
 - Manejo global del estado del carrito
 - Persistencia automática en localStorage
 - Métodos: addItem, removeItem, updateQuantity, clearCart
 - Cálculos: getTotal, getTotalWithDiscount, getItemsCount
 
-## 🆕 Funcionalidades Implementadas
+## 🆕 Funcionalidades Implementadas Recientemente
 
-### Sistema de Pedidos
-1. **Backend**:
-   - Entidad Order con estados y gestión de stock
-   - Validación de stock antes de crear pedido
-   - Reducción temporal de stock al crear pedido
-   - Restauración de stock al cancelar pedido
-   - Endpoints públicos para crear pedidos sin autenticación
+### Sistema de Upload de Imágenes
+1. **Upload directo a Cloudinary**:
+   - Sin pasar por el backend
+   - Selector nativo de archivos
+   - Muestra previews mientras sube
+   - Permite eliminar imágenes subidas
 
-2. **Frontend - Tienda**:
-   - Carrito de compras con persistencia
-   - Página de checkout con formulario de cliente
-   - Confirmación de pedido con número único
-   - Integración con WhatsApp para contacto
+2. **Configuración de CSP**:
+   - Content Security Policy actualizada para Cloudinary
+   - Permite frames de upload-widget.cloudinary.com
+   - Permisos de cámara configurados
 
-3. **Frontend - Admin**:
-   - Gestión completa de pedidos
-   - Cambio de estados con flujo definido
-   - Estadísticas en tiempo real
-   - Vista expandible con detalles
+3. **Transformaciones de imágenes**:
+   - Optimización automática con q_auto
+   - Diferentes tamaños para responsive
+   - Formatos modernos (WebP cuando es posible)
 
-### Configuración de Tienda
-- Gestión de información de contacto desde admin
-- Configuración de redes sociales
-- Personalización de colores (primario/secundario)
-- Datos se muestran dinámicamente en la tienda pública
+### Sistema de Pedidos Simplificado
+- Estados reducidos de 6 a 4
+- Gestión automática de stock
+- WhatsApp/llamada integrados para pedidos listos
+
+### Mejoras de UI/UX
+- Footer más compacto
+- Imágenes de productos más pequeñas y elegantes
+- Admin email y WhatsApp en contacto
+- Toggle para WhatsApp button en configuración
 
 ## 🐛 Solución de Problemas Comunes
+
+### Imágenes no se muestran en listado de productos (Enero 2025)
+- **PROBLEMA**: Backend devolvía objetos vacíos `{}` en lugar de URLs
+- **SOLUCIÓN**: 
+  1. Backend actualizado para manejar tanto strings como objetos con url/publicId
+  2. Frontend cambiado de `Image` de Next.js a `img` estándar para URLs de Cloudinary
+  3. Backend guarda objetos `{url, publicId}` pero devuelve strings al frontend
+- **ARCHIVOS ACTUALIZADOS**:
+  - `/backend/src/product/product.service.ts`: Manejo de imágenes mejorado
+  - `/src/components/admin/product/product-list.tsx`: Cambio a `img` estándar
+  - `/src/components/admin/product/view-product-dialog.tsx`: Lo mismo
+
+### Productos no visibles en tienda pública
+- **PROBLEMA**: Productos creados con `active: false` por defecto
+- **SOLUCIÓN**: Productos ahora se crean con `active: true` por defecto
+
+### Error de Upload a Cloudinary
+- **PROBLEMA**: Upload preset configurado como SIGNED
+- **SOLUCIÓN**: Cambiar a UNSIGNED en https://console.cloudinary.com/settings/upload
+
+### Enlaces 404 en navegación de tienda
+- **PROBLEMA**: Enlaces sin el prefijo `/store/${subdomain}`
+- **SOLUCIÓN**: Actualizado en `store-header.tsx` todos los enlaces
 
 ### TypeScript Build Errors
 - Temporalmente deshabilitado `strict` mode en `tsconfig.json`
 - Creado tipo `SimpleTenant` para manejar datos parciales de tenant
 - Agregado Suspense boundary para `useSearchParams()`
 
-### Selección de Tienda al Login
-- **SOLUCIONADO**: El backend ahora envía `currentTenantId` como string
-- En `auth.service.ts`: Se agregó `.toString()` al currentTenantId en el JWT
-- Se eliminó el `.populate()` que causaba que se incluyera el objeto completo
-
-### Problema "Sin categoría" en Tallas
-- **SOLUCIONADO**: Se obtienen categorías y tallas por separado
-- Se hace el match en frontend usando un Map para búsqueda eficiente
-- No depende del populate del backend
-
-### Error 404 en `/admin/tallas`
-- **SOLUCIONADO**: Se creó la página que faltaba
-- Se eliminó el antiguo `/admin/login` que causaba confusión
-
-### Variables de Entorno en Producción
-- No modificar manualmente `.env.local` en el servidor
-- Las variables se crean automáticamente durante el deploy
-- Para cambios, actualizar el archivo `deploy-frontend.yml`
-
-### CORS Issues
-- **SOLUCIONADO**: Se agregó `X-Tenant-Id` a los headers permitidos en el backend
+### Error 401 Unauthorized
+- Token expirado → Cerrar sesión y volver a iniciar
+- Verificar que el token se esté enviando correctamente
 
 ## 📋 Checklist de Deploy
 
@@ -312,6 +397,8 @@ git push origin main
 - [ ] Verificar secrets en GitHub Actions:
   - `EC2_HOST`: IP del servidor
   - `EC2_SSH_KEY`: Clave SSH privada
+  - Variables de Cloudinary
+- [ ] Configurar upload preset en Cloudinary como UNSIGNED
 - [ ] Push a main para activar deploy automático
 - [ ] Verificar logs en GitHub Actions
 - [ ] Probar aplicación en https://tiendagenai.com
@@ -343,7 +430,7 @@ pm2 restart frontend-tiendagenai
 
 1. **Multi-tenancy**: 
    - Admin panel funciona SIN subdominio (local y producción)
-   - Tiendas públicas usarán subdominios (NO IMPLEMENTADO AÚN)
+   - Tiendas públicas con subdominios
    - Tenant se maneja por headers `X-Tenant-Id`
 
 2. **Autenticación**: 
@@ -351,73 +438,44 @@ pm2 restart frontend-tiendagenai
    - Se envía como `Authorization: Bearer ${token}`
    - Verificación client-side en AdminLayout
 
-3. **Estado Global**: 
+3. **Imágenes**:
+   - Upload directo a Cloudinary desde frontend
+   - Se guardan como URLs strings, no objetos
+   - Upload preset DEBE ser UNSIGNED
+   - No se borran automáticamente (requiere backend)
+
+4. **Estado Global**: 
    - AuthContext maneja usuario y tenant actual
    - TanStack Query para datos del servidor
    - localStorage para persistencia
-
-4. **Gestión de Tallas**:
-   - Se obtienen tallas y categorías por separado
-   - Match se hace en frontend (más robusto)
-   - Diseño visual con cajitas agrupadas por categoría
 
 5. **Deploy Automático**: 
    - Push a `main` → GitHub Actions → Deploy automático
    - Backend y Frontend tienen workflows separados
 
-## 🚨 Errores Comunes y Soluciones
-
-### "Cannot read property of undefined"
-- Verificar que el usuario tenga tenants asignados
-- Revisar que currentTenantId sea string, no objeto
-
-### Tallas sin categoría
-- Asegurarse de que el backend esté corriendo
-- Verificar que las categorías existan en la BD
-
-### Error 401 Unauthorized
-- Token expirado → Cerrar sesión y volver a iniciar
-- Verificar que el token se esté enviando correctamente
-
-### Module not found
-- Instalar dependencias faltantes: `npm install react-hot-toast`
-- Verificar imports y rutas de archivos
-
-### AdminLayout no existe
-- Las páginas admin NO usan `AdminLayout` como componente
-- El layout está en `/app/admin/layout.tsx` automáticamente
-
-### Cambios no se reflejan
-- En producción: Esperar que termine el deploy
-- En local: Verificar que el servidor esté corriendo
-
 ## 🔄 Próximas Mejoras
 
-1. Sistema de notificaciones push
-2. Dashboard con gráficos y analytics avanzados
-3. Sistema de inventario automático
+1. Endpoint en backend para borrar imágenes de Cloudinary
+2. Sistema de notificaciones push
+3. Dashboard con gráficos y analytics avanzados
 4. Integración con pasarelas de pago
 5. PWA support para móviles
 6. Sistema de facturación electrónica
 7. Multi-idioma
 8. Sistema de cupones y descuentos
 
-## 📝 Notas de la Última Actualización
+## 📝 Última Actualización: Diciembre 2024
 
-### Tareas Completadas:
-1. ✅ Eliminado icono de Twitter del footer
-2. ✅ Mejorada página de detalle con selector múltiple de talles
-3. ✅ Agregado botón flotante de WhatsApp
-4. ✅ Implementado sistema de configuración desde admin
-5. ✅ Creado carrito de compras funcional con persistencia
-6. ✅ Implementado sistema completo de pedidos (backend + frontend)
-7. ✅ Creada página de gestión de pedidos en admin
-8. ✅ Actualizado header (solo icono de carrito con contador)
-9. ✅ Creada página de contacto con datos dinámicos del tenant
+### Cambios Principales:
+- ✅ Sistema de upload directo a Cloudinary implementado
+- ✅ CSP configurado para permitir widget de Cloudinary
+- ✅ Tipos de datos actualizados (images como string[])
+- ✅ Enlaces de navegación corregidos en store-header
+- ✅ Sistema de tracking de pedidos funcional
+- ✅ Toggle de WhatsApp en configuración
+- ✅ Gestión de pedidos simplificada a 4 estados
 
-### Características Destacadas:
-- **Carrito persistente**: Se mantiene entre recargas de página
-- **Stock temporal**: Se reduce al crear pedido, se restaura al cancelar
-- **Configuración dinámica**: Redes sociales y contacto configurables
-- **Estados de pedido**: Flujo completo desde pendiente hasta entregado
-- **Notificaciones**: Sistema de toast integrado con react-hot-toast
+### Pendiente de Resolver:
+- ⚠️ Verificar que las imágenes se muestren correctamente en el listado de productos
+- ⚠️ Implementar borrado de imágenes desde backend cuando se elimine un producto
+- ⚠️ El upload preset de Cloudinary debe estar configurado como UNSIGNED
