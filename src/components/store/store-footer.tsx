@@ -81,21 +81,21 @@ export function StoreFooter({ storeData }: StoreFooterProps) {
           <div>
             <h4 className="text-white text-base font-semibold mb-1">Contacto</h4>
             <ul className="space-y-1 text-xs">
-              {/* Email del admin/dueño */}
-              {storeData.email && (
-                <li className="flex items-start space-x-2">
-                  <Mail className="w-3 h-3 mt-0.5" />
-                  <a href={`mailto:${storeData.email}`} className="hover:text-white">
-                    {storeData.email}
-                  </a>
-                </li>
-              )}
               {/* Teléfono de WhatsApp si existe y está habilitado */}
               {storeData.settings?.whatsappEnabled && storeData.settings?.whatsapp && (
                 <li className="flex items-start space-x-2">
                   <Phone className="w-3 h-3 mt-0.5" />
                   <a href={`tel:${storeData.settings.whatsapp}`} className="hover:text-white">
                     {formatPhone(storeData.settings.whatsapp)}
+                  </a>
+                </li>
+              )}
+              {/* Email del admin/dueño */}
+              {(storeData.email || storeData.settings?.email) && (
+                <li className="flex items-start space-x-2">
+                  <Mail className="w-3 h-3 mt-0.5" />
+                  <a href={`mailto:${storeData.email || storeData.settings?.email}`} className="hover:text-white">
+                    {storeData.email || storeData.settings?.email}
                   </a>
                 </li>
               )}
