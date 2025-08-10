@@ -108,6 +108,14 @@ export function ProductTableInfinite({
   const getTotalStock = (product: Product) => {
     return product.stock?.reduce((total, item) => total + (item.quantity || 0), 0) || 0
   }
+  
+  const getStockDisplay = (product: Product) => {
+    const total = getTotalStock(product)
+    if (product.stockType === 'unit') {
+      return `${total} ${total === 1 ? 'unidad' : 'unidades'}`
+    }
+    return `${total} piezas`
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -189,7 +197,9 @@ export function ProductTableInfinite({
                       )}>
                         {getTotalStock(product)}
                       </span>
-                      <span className="text-[10px] text-gray-500">unidades</span>
+                      <span className="text-[10px] text-gray-500">
+                        {product.stockType === 'unit' ? 'unidades' : 'piezas'}
+                      </span>
                     </div>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">

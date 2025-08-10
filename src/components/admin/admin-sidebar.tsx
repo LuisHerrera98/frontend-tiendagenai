@@ -44,7 +44,7 @@ const navigation: NavItem[] = [
   { name: 'Tipos', href: '/admin/tipos', icon: Grid3X3, permission: [Permission.TYPES_VIEW, Permission.TYPES_MANAGE] },
   { name: 'Géneros', href: '/admin/generos', icon: UserCheck, permission: [Permission.GENDERS_VIEW, Permission.GENDERS_MANAGE] },
   { name: 'Colores', href: '/admin/colores', icon: Palette, permission: [Permission.COLORS_VIEW, Permission.COLORS_MANAGE] },
-  { name: 'Ventas', href: '/admin/ventas', icon: ShoppingCart, permission: Permission.SALES_VIEW },
+  { name: 'Ventas', href: '/admin/ventas', icon: ShoppingCart, permission: Permission.SALES_VIEW, disabled: true },
   { name: 'Pedidos', href: '/admin/pedidos', icon: ClipboardList, permission: Permission.ORDERS_VIEW },
   { name: 'Usuarios', href: '/admin/usuarios', icon: Shield, permission: Permission.USERS_VIEW, disabled: true },
   { name: 'Configuración', href: '/admin/configuracion', icon: Settings, permission: Permission.SETTINGS_VIEW },

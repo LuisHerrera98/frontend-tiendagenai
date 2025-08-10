@@ -76,6 +76,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
   const [uploadingImages, setUploadingImages] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
+  const [stockType, setStockType] = useState<'sizes' | 'unit'>('sizes')
+  const [unitQuantity, setUnitQuantity] = useState<number>(0)
   const queryClient = useQueryClient()
 
   const form = useForm<ProductFormData>({
@@ -173,15 +175,28 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
         return
       }
       
-      const stock = selectedSizes.map(sizeId => {
-        const size = sizes?.find(s => s._id === sizeId)
-        return {
-          size_id: sizeId,
-          size_name: size?.name || '',
-          quantity: typeof sizeQuantities[sizeId] === 'string' ? parseInt(sizeQuantities[sizeId]) || 0 : sizeQuantities[sizeId] || 0,
+      let stock = []
+      
+      if (stockType === 'unit') {
+        // Para productos por unidad, crear un solo item de stock
+        stock = [{
+          size_id: 'unit',
+          size_name: 'UNIDAD',
+          quantity: typeof unitQuantity === 'string' ? parseInt(unitQuantity) || 0 : unitQuantity || 0,
           available: true,
-        }
-      })
+        }]
+      } else {
+        // Para productos con talles, usar el sistema actual
+        stock = selectedSizes.map(sizeId => {
+          const size = sizes?.find(s => s._id === sizeId)
+          return {
+            size_id: sizeId,
+            size_name: size?.name || '',
+            quantity: typeof sizeQuantities[sizeId] === 'string' ? parseInt(sizeQuantities[sizeId]) || 0 : sizeQuantities[sizeId] || 0,
+            available: true,
+          }
+        })
+      }
 
       const productData: CreateProductDto = {
         ...data,
@@ -189,6 +204,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
         price: typeof data.price === 'string' ? parseFloat(data.price) || 0 : data.price,
         discount: typeof data.discount === 'string' ? parseFloat(data.discount) || 0 : data.discount,
         stock,
+        stockType,
         images: uploadedUrls,
         genders: data.genders || [],
         color_id: data.color_id,
@@ -525,41 +541,88 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
             </div>
 
             <div>
-              <Label className="text-base font-medium">Tallas y Stock</Label>
+              <Label className="text-base font-medium">Tipo de Stock</Label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStockType('sizes')}
+                  className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                    stockType === 'sizes' 
+                      ? 'bg-green-50 border-green-500 text-green-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Por Talles
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStockType('unit')}
+                  className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                    stockType === 'unit' 
+                      ? 'bg-green-50 border-green-500 text-green-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Por Unidad/Paquete
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-base font-medium">
+                {stockType === 'unit' ? 'Cantidad de Unidades' : 'Tallas y Stock'}
+              </Label>
               <div className="mt-2 space-y-3 max-h-40 overflow-y-auto">
-                {!selectedCategoryId ? (
-                  <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
-                    Selecciona una categoría para ver las tallas disponibles
-                  </p>
-                ) : sizes?.length === 0 ? (
-                  <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
-                    No hay tallas disponibles para esta categoría
-                  </p>
+                {stockType === 'unit' ? (
+                  <div className="flex items-center space-x-3 p-3 border rounded bg-gray-50">
+                    <Label className="text-sm">Cantidad disponible:</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={unitQuantity || ''}
+                      onChange={(e) => setUnitQuantity(parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      className="w-32"
+                    />
+                    <span className="text-sm text-gray-500">unidades/paquetes</span>
+                  </div>
                 ) : (
-                  sizes?.map((size) => (
-                    <div key={size._id} className={`flex items-start space-x-3 p-3 border rounded transition-colors ${selectedSizes.includes(size._id) ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50'}`}>
-                      <Checkbox
-                        checked={selectedSizes.includes(size._id)}
-                        onCheckedChange={() => handleSizeToggle(size._id)}
-                        className="h-5 w-5 mt-0.5"
-                      />
-                      <Label className="flex-1 cursor-pointer leading-relaxed" onClick={() => handleSizeToggle(size._id)}>{size.name}</Label>
-                      {selectedSizes.includes(size._id) && (
-                        <div className="flex items-center space-x-2">
-                          <Label className="text-sm">Cantidad:</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={sizeQuantities[size._id] || ''}
-                            onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
-                            onChange={(e) => handleQuantityChange(size._id, e.target.value)}
-                            placeholder="1"
-                            className="w-20"
+                  <>
+                    {!selectedCategoryId ? (
+                      <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
+                        Selecciona una categoría para ver las tallas disponibles
+                      </p>
+                    ) : sizes?.length === 0 ? (
+                      <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
+                        No hay tallas disponibles para esta categoría
+                      </p>
+                    ) : (
+                      sizes?.map((size) => (
+                        <div key={size._id} className={`flex items-start space-x-3 p-3 border rounded transition-colors ${selectedSizes.includes(size._id) ? 'bg-green-50 border-green-200' : 'bg-white hover:bg-gray-50'}`}>
+                          <Checkbox
+                            checked={selectedSizes.includes(size._id)}
+                            onCheckedChange={() => handleSizeToggle(size._id)}
+                            className="h-5 w-5 mt-0.5"
                           />
+                          <Label className="flex-1 cursor-pointer leading-relaxed" onClick={() => handleSizeToggle(size._id)}>{size.name}</Label>
+                          {selectedSizes.includes(size._id) && (
+                            <div className="flex items-center space-x-2">
+                              <Label className="text-sm">Cantidad:</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={sizeQuantities[size._id] || ''}
+                                onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                                onChange={(e) => handleQuantityChange(size._id, e.target.value)}
+                                placeholder="1"
+                                className="w-20"
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))
+                      ))
+                    )}
+                  </>
                 )}
               </div>
             </div>

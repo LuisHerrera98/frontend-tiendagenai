@@ -54,6 +54,11 @@ export function middleware(request: NextRequest) {
   }
 
   // CON SUBDOMINIO - Es una tienda pública (solo en producción)
+  // Si ya está en la ruta /store/[subdomain], no reescribir
+  if (pathname.startsWith(`/store/${subdomain}`)) {
+    return NextResponse.next()
+  }
+  
   // Reescribir la URL para usar nuestra ruta dinámica
   url.pathname = `/store/${subdomain}${pathname}`
   return NextResponse.rewrite(url)

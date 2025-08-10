@@ -26,7 +26,9 @@ export function CustomSelect({
   className = ""
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom')
   const selectRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const selectedOption = options.find(option => option.value === value)
 
@@ -41,6 +43,21 @@ export function CustomSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect()
+      const dropdownHeight = Math.min(options.length * 40, 240) // Estimado: 40px por item, max 240px
+      const spaceBelow = window.innerHeight - buttonRect.bottom
+      const spaceAbove = buttonRect.top
+      
+      if (spaceBelow < dropdownHeight + 20 && spaceAbove > spaceBelow) {
+        setDropdownPosition('top')
+      } else {
+        setDropdownPosition('bottom')
+      }
+    }
+  }, [isOpen, options.length])
+
   const handleOptionClick = (optionValue: string) => {
     onChange(optionValue)
     setIsOpen(false)
@@ -49,6 +66,7 @@ export function CustomSelect({
   return (
     <div ref={selectRef} className={`relative ${className}`}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
@@ -67,7 +85,15 @@ export function CustomSelect({
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div 
+          className={`
+            absolute z-[100] w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto
+            ${dropdownPosition === 'top' 
+              ? 'bottom-full mb-1' 
+              : 'top-full mt-1'
+            }
+          `}
+        >
           {options.map((option) => (
             <button
               key={option.value}

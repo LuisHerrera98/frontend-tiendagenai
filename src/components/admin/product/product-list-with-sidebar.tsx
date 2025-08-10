@@ -117,7 +117,7 @@ export function ProductListWithSidebar() {
   }
 
   return (
-    <div className="flex gap-6 h-full overflow-hidden">
+    <div className="flex gap-6 h-full">
       {/* Mobile filter button */}
       <Button
         className="lg:hidden fixed bottom-4 right-4 z-50 rounded-full shadow-lg"
@@ -129,7 +129,7 @@ export function ProductListWithSidebar() {
 
       {/* Sidebar Filters */}
       <aside className={cn(
-        "w-64 flex-shrink-0 space-y-4",
+        "w-64 flex-shrink-0 space-y-4 overflow-visible",
         "lg:block",
         isMobileFiltersOpen ? "fixed inset-0 z-40 bg-white p-6 overflow-y-auto" : "hidden"
       )}>
@@ -147,7 +147,7 @@ export function ProductListWithSidebar() {
           </div>
         )}
 
-        <Card className="p-4">
+        <Card className="p-4 overflow-visible">
           <h3 className="font-semibold mb-4 text-sm text-gray-700">FILTROS</h3>
           
           {/* Search */}
