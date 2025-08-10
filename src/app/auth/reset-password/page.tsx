@@ -23,6 +23,16 @@ export default function ResetPasswordPage() {
   const [step, setStep] = useState<'code' | 'password'>('code')
 
   useEffect(() => {
+    // Verificar si viene un token en la URL (método antiguo)
+    const urlParams = new URLSearchParams(window.location.search)
+    const token = urlParams.get('token')
+    
+    if (token) {
+      toast.error('Este link usa el método antiguo. Por favor solicita un nuevo código de recuperación.')
+      router.push('/auth/forgot-password')
+      return
+    }
+    
     // Obtener el email guardado desde la página anterior
     const savedEmail = localStorage.getItem('reset_email')
     if (savedEmail) {
