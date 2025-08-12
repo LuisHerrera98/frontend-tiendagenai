@@ -111,10 +111,10 @@ export function ProductTableInfinite({
   
   const getStockDisplay = (product: Product) => {
     const total = getTotalStock(product)
-    if (product.stockType === 'unit') {
-      return `${total} ${total === 1 ? 'unidad' : 'unidades'}`
+    if (product.stockType === 'pack') {
+      return `${total} ${total === 1 ? 'paquete' : 'paquetes'}`
     }
-    return `${total} piezas`
+    return `${total} ${total === 1 ? 'unidad' : 'unidades'}`
   }
 
   return (
@@ -198,7 +198,7 @@ export function ProductTableInfinite({
                         {getTotalStock(product)}
                       </span>
                       <span className="text-[10px] text-gray-500">
-                        {product.stockType === 'unit' ? 'unidades' : 'piezas'}
+                        {product.stockType === 'pack' ? 'paquetes' : 'unidades'}
                       </span>
                     </div>
                   </td>

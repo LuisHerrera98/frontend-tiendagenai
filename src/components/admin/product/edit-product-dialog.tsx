@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { CustomSelect } from '@/components/ui/custom-select'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
@@ -488,7 +489,18 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
 
           {/* Sizes and Stock Management - Full Width */}
           <div className="space-y-4 mt-6 pt-6 border-t">
-            <Label className="text-base font-medium">Talles y Stock</Label>
+            <Label className="text-base font-medium">
+              {product?.stockType === 'pack' ? 'Stock por paquete/bloque' : 'Talles y Stock'}
+              {product?.stockType === 'pack' ? (
+                <Badge variant="outline" className="ml-2 text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200">
+                  Por paquete/bloque
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="ml-2 text-xs px-1.5 py-0 h-5 bg-green-50 text-green-700 border-green-200">
+                  Por talles/unidad
+                </Badge>
+              )}
+            </Label>
             <div className="space-y-3 max-h-40 overflow-y-auto">
               {!formData.category_id ? (
                 <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">

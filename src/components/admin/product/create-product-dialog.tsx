@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { CustomSelect } from '@/components/ui/custom-select'
 import { X, Loader2 } from 'lucide-react'
 import Image from 'next/image'
@@ -76,7 +77,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
   const [uploadingImages, setUploadingImages] = useState(false)
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({})
-  const [stockType, setStockType] = useState<'sizes' | 'unit'>('sizes')
+  const [stockType, setStockType] = useState<'sizes' | 'pack'>('sizes')
   const [unitQuantity, setUnitQuantity] = useState<number>(0)
   const queryClient = useQueryClient()
 
@@ -177,7 +178,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       
       let stock = []
       
-      if (stockType === 'unit') {
+      if (stockType === 'pack') {
         // Para productos por unidad, crear un solo item de stock
         stock = [{
           size_id: 'unit',
@@ -552,28 +553,37 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                       : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  Por Talles
+                  Por Talles/Unidad
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStockType('unit')}
+                  onClick={() => setStockType('pack')}
                   className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
-                    stockType === 'unit' 
+                    stockType === 'pack' 
                       ? 'bg-green-50 border-green-500 text-green-700' 
                       : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  Por Unidad/Paquete
+                  Por Paquete/Bloque
                 </button>
               </div>
             </div>
 
             <div>
-              <Label className="text-base font-medium">
-                {stockType === 'unit' ? 'Cantidad de Unidades' : 'Tallas y Stock'}
+              <Label className="text-base font-medium flex items-center gap-2">
+                {stockType === 'pack' ? 'Stock por paquete/bloque' : 'Talles y Stock por unidad'}
+                {stockType === 'pack' ? (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200">
+                    Por paquete/bloque
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-green-50 text-green-700 border-green-200">
+                    Por talles/unidad
+                  </Badge>
+                )}
               </Label>
               <div className="mt-2 space-y-3 max-h-40 overflow-y-auto">
-                {stockType === 'unit' ? (
+                {stockType === 'pack' ? (
                   <div className="flex items-center space-x-3 p-3 border rounded bg-gray-50">
                     <Label className="text-sm">Cantidad disponible:</Label>
                     <Input
@@ -584,7 +594,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                       placeholder="0"
                       className="w-32"
                     />
-                    <span className="text-sm text-gray-500">unidades/paquetes</span>
+                    <span className="text-sm text-gray-500">paquetes</span>
                   </div>
                 ) : (
                   <>

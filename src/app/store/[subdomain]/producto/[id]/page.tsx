@@ -26,6 +26,7 @@ interface ProductDetail {
   code: string
   gender: string
   images: string[]
+  stockType?: 'sizes' | 'pack'
   category: {
     id: string
     name: string
@@ -439,7 +440,12 @@ export default function ProductDetailPage() {
                 <div className="mt-6 p-4 bg-gray-100 rounded-lg">
                   <div className="flex justify-between mb-2">
                     <span>Cantidad total:</span>
-                    <span className="font-semibold">{getTotalQuantity()} unidades</span>
+                    <span className="font-semibold">
+                      {getTotalQuantity()} {product.stockType === 'pack' ? 
+                        (getTotalQuantity() === 1 ? 'paquete' : 'paquetes') : 
+                        (getTotalQuantity() === 1 ? 'unidad' : 'unidades')
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between text-lg">
                     <span>Total:</span>

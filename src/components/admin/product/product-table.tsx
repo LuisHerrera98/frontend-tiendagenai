@@ -160,7 +160,9 @@ export function ProductTable({
                     )}>
                       {getTotalStock(product)}
                     </span>
-                    <span className="text-[10px] text-gray-500">unidades</span>
+                    <span className="text-[10px] text-gray-500">
+                      {product.stockType === 'pack' ? 'paquetes' : 'unidades'}
+                    </span>
                   </div>
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap text-center">

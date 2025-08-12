@@ -214,7 +214,9 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
                       totalStock > 0 ? 'text-amber-600' : 
                       'text-red-600'
                     }`}>
-                      {totalStock} <span className="text-sm font-normal">unidades</span>
+                      {totalStock} <span className="text-sm font-normal">
+                        {product.stockType === 'pack' ? 'paquetes' : 'unidades'}
+                      </span>
                     </p>
                   </div>
                 </div>

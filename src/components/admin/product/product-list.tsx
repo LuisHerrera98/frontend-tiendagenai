@@ -191,7 +191,20 @@ export function ProductList() {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono">{product.code}</TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{product.name}</span>
+                        {product.stockType === 'pack' ? (
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200">
+                            Por paquete/bloque
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-green-50 text-green-700 border-green-200">
+                            Por talles/unidad
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{brands?.find(b => b._id === product.brand_id)?.name || '-'}</TableCell>
                     <TableCell>{types?.find(t => t._id === product.type_id)?.name || '-'}</TableCell>
                     <TableCell>
@@ -232,7 +245,14 @@ export function ProductList() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {product.stock?.reduce((sum, item) => sum + item.quantity, 0) || 0}
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {product.stock?.reduce((sum, item) => sum + item.quantity, 0) || 0}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {product.stockType === 'pack' ? 'paquetes' : 'unidades'}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
