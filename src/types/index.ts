@@ -187,3 +187,36 @@ export interface CreateGenderDto {
 export interface UpdateGenderDto {
   name?: string
 }
+
+// Store types
+export interface StoreData {
+  id: string
+  _id?: string
+  subdomain: string
+  storeName: string
+  email?: string
+  customization?: {
+    primaryColor?: string
+    secondaryColor?: string
+    logo?: string
+    banner?: string
+    socialMedia?: {
+      facebook?: string
+      instagram?: string
+      whatsapp?: string
+    }
+  }
+  settings?: {
+    email?: string
+    phone?: string
+    address?: string
+    whatsapp?: string
+    whatsappEnabled?: boolean
+    instagram?: string
+    facebook?: string
+    simpleStoreEnabled?: boolean
+    currency?: string
+    timezone?: string
+    [key: string]: any
+  }
+}

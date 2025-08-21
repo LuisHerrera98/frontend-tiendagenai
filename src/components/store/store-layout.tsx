@@ -4,32 +4,7 @@ import { ReactNode } from 'react'
 import { StoreHeader } from './store-header'
 import { StoreFooter } from './store-footer'
 import { WhatsAppButton } from './whatsapp-button'
-
-interface StoreData {
-  id: string
-  subdomain: string
-  storeName: string
-  email?: string
-  customization?: {
-    primaryColor?: string
-    secondaryColor?: string
-    logo?: string
-    socialMedia?: {
-      facebook?: string
-      instagram?: string
-      whatsapp?: string
-    }
-  }
-  settings?: {
-    email?: string
-    phone?: string
-    address?: string
-    whatsapp?: string
-    whatsappEnabled?: boolean
-    instagram?: string
-    facebook?: string
-  }
-}
+import type { StoreData } from '@/types'
 
 interface StoreLayoutProps {
   children: ReactNode

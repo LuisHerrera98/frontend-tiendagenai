@@ -165,13 +165,24 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       // Set existing stock data ONLY on initial load
       if (product.stock && product.stock.length > 0) {
         const initialSizes: {[key: string]: {name: string, quantity: number, selected: boolean}} = {}
-        product.stock.forEach(s => {
-          initialSizes[s.size_id] = {
-            name: s.size_name,
-            quantity: s.quantity,
+        
+        // Para productos tipo pack, usar configuración especial
+        if (product.stockType === 'pack') {
+          initialSizes['pack'] = {
+            name: 'PAQUETE',
+            quantity: product.stock[0]?.quantity || 0,
             selected: true
           }
-        })
+        } else {
+          // Para productos con talles, procesar normalmente
+          product.stock.forEach(s => {
+            initialSizes[s.size_id] = {
+              name: s.size_name,
+              quantity: s.quantity,
+              selected: true
+            }
+          })
+        }
         setProductSizes(initialSizes)
       } else {
         setProductSizes({})
@@ -502,7 +513,30 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
               )}
             </Label>
             <div className="space-y-3 max-h-40 overflow-y-auto">
-              {!formData.category_id ? (
+              {product?.stockType === 'pack' ? (
+                // Para productos tipo pack, solo mostrar campo de cantidad
+                <div className="flex items-center space-x-3 p-3 border rounded bg-gray-50">
+                  <Label className="text-sm">Cantidad disponible:</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={productSizes['pack']?.quantity || product?.stock?.[0]?.quantity || 0}
+                    onChange={(e) => {
+                      const newQuantity = parseInt(e.target.value) || 0;
+                      setProductSizes({
+                        'pack': {
+                          name: 'PAQUETE',
+                          quantity: newQuantity,
+                          selected: true
+                        }
+                      });
+                    }}
+                    placeholder="0"
+                    className="w-32"
+                  />
+                  <span className="text-sm text-gray-500">paquetes</span>
+                </div>
+              ) : !formData.category_id ? (
                 <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">
                   Selecciona una categoría para ver los talles disponibles
                 </p>

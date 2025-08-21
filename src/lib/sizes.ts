@@ -20,6 +20,23 @@ export const sizeService = {
     return response.data
   },
 
+  // Create multiple sizes
+  createMultiple: async (categoryId: string, sizes: { name: string }[]): Promise<{
+    success: boolean
+    created: Size[]
+    skipped: { name: string; reason: string }[]
+    errors: { name: string; error: string }[]
+    summary: {
+      total: number
+      created: number
+      skipped: number
+      errors: number
+    }
+  }> => {
+    const response = await api.post('/size/multiple', { category_id: categoryId, sizes })
+    return response.data
+  },
+
   // Update size
   update: async (id: string, name: string, categoryId?: string): Promise<Size> => {
     const data: any = { name }

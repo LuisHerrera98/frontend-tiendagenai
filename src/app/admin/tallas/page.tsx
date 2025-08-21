@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, Layers } from 'lucide-react'
 import { CreateSizeDialog } from '@/components/admin/size/create-size-dialog'
+import { CreateMultipleSizesDialog } from '@/components/admin/size/create-multiple-sizes-dialog'
 import { EditSizeDialog } from '@/components/admin/size/edit-size-dialog'
 import { DeleteSizeDialog } from '@/components/admin/size/delete-size-dialog'
 import { useQuery } from '@tanstack/react-query'
@@ -12,6 +13,7 @@ import { getCategories } from '@/lib/categories'
 
 export default function TallasPage() {
   const [createOpen, setCreateOpen] = useState(false)
+  const [createMultipleOpen, setCreateMultipleOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedSize, setSelectedSize] = useState<any>(null)
@@ -62,10 +64,23 @@ export default function TallasPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Tallas</h1>
-        <Button onClick={() => setCreateOpen(true)} className="bg-black hover:bg-gray-800">
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Talla
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setCreateOpen(true)} 
+            variant="outline"
+            className="border-gray-300 hover:bg-gray-50"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Una Talla
+          </Button>
+          <Button 
+            onClick={() => setCreateMultipleOpen(true)} 
+            className="bg-black hover:bg-gray-800"
+          >
+            <Layers className="mr-2 h-4 w-4" />
+            Múltiples Tallas
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -117,6 +132,11 @@ export default function TallasPage() {
       <CreateSizeDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
+      />
+
+      <CreateMultipleSizesDialog
+        open={createMultipleOpen}
+        onOpenChange={setCreateMultipleOpen}
       />
 
       {selectedSize && (

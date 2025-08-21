@@ -4,19 +4,9 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { StoreLayout } from '@/components/store/store-layout'
 import { ProductCatalog } from '@/components/store/product-catalog'
+import { SimpleCategoryView } from '@/components/store/simple-category-view'
 import { api } from '@/lib/api'
-
-interface StoreData {
-  id: string
-  subdomain: string
-  storeName: string
-  customization?: {
-    primaryColor?: string
-    secondaryColor?: string
-    logo?: string
-    banner?: string
-  }
-}
+import type { StoreData } from '@/types'
 
 export default function StorePage() {
   const params = useParams()
@@ -71,9 +61,19 @@ export default function StorePage() {
     )
   }
 
+  // Verificar si la tienda simple está habilitada
+  const isSimpleStore = storeData.settings?.simpleStoreEnabled === true
+
   return (
     <StoreLayout storeData={storeData}>
-      <ProductCatalog subdomain={storeData.subdomain} />
+      {isSimpleStore ? (
+        <SimpleCategoryView 
+          subdomain={storeData.subdomain} 
+          storeName={storeData.storeName}
+        />
+      ) : (
+        <ProductCatalog subdomain={storeData.subdomain} />
+      )}
     </StoreLayout>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
-import { useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
 import { StoreLayout } from '@/components/store/store-layout'
 import { ProductCard } from '@/components/store/product-card'
 import { api } from '@/lib/api'
@@ -35,22 +35,35 @@ interface Category {
   name: string
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const subdomain = params.subdomain as string
   const [storeData, setStoreData] = useState<StoreData | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const limit = 12
 
   useEffect(() => {
+    // Obtener la categoría de los parámetros de URL si existe
+    const categoryFromUrl = searchParams.get('category')
+    const categoryNameFromUrl = searchParams.get('categoryName')
+    
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl)
+      if (categoryNameFromUrl) {
+        setSelectedCategoryName(decodeURIComponent(categoryNameFromUrl))
+      }
+    }
+    
     fetchStoreData()
     fetchCategories()
-  }, [subdomain])
+  }, [subdomain, searchParams])
 
   useEffect(() => {
     fetchProducts()
@@ -115,7 +128,16 @@ export default function ProductsPage() {
   return (
     <StoreLayout storeData={storeData}>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Nuestros Productos</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">
+            {selectedCategoryName ? `${selectedCategoryName}` : 'Nuestros Productos'}
+          </h1>
+          {selectedCategoryName && (
+            <p className="text-gray-600 mt-2">
+              Mostrando todos los productos de la categoría
+            </p>
+          )}
+        </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filtros de categorías */}
@@ -126,6 +148,7 @@ export default function ProductsPage() {
                 <button
                   onClick={() => {
                     setSelectedCategory('')
+                    setSelectedCategoryName('')
                     setCurrentPage(1)
                   }}
                   className={`block w-full text-left px-3 py-2 rounded ${
@@ -141,6 +164,7 @@ export default function ProductsPage() {
                     key={category.id}
                     onClick={() => {
                       setSelectedCategory(category.id)
+                      setSelectedCategoryName(category.name)
                       setCurrentPage(1)
                     }}
                     className={`block w-full text-left px-3 py-2 rounded ${
@@ -210,5 +234,17 @@ export default function ProductsPage() {
         </div>
       </div>
     </StoreLayout>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   )
 }
