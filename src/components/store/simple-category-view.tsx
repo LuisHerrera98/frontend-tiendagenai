@@ -11,7 +11,8 @@ interface SimpleCategoryViewProps {
 }
 
 interface Category {
-  _id: string
+  id: string
+  _id?: string
   name: string
   description?: string
 }
@@ -58,21 +59,21 @@ export function SimpleCategoryView({ subdomain, storeName }: SimpleCategoryViewP
     <div className="min-h-[60vh] py-12 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Título de la tienda */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{storeName}</h1>
-          <p className="text-lg text-gray-600">Selecciona una categoría para ver nuestros productos</p>
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">{storeName}</h1>
+          <p className="text-base sm:text-lg text-gray-600 px-4 sm:px-0">Selecciona una categoría para ver nuestros productos</p>
         </div>
 
         {/* Grid de categorías */}
         {categories.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             {categories.map((category) => (
               <button
-                key={category._id}
-                onClick={() => handleCategoryClick(category._id, category.name)}
-                className="group relative bg-white border-2 border-gray-200 rounded-lg px-6 py-4 hover:border-gray-900 hover:shadow-md transition-all duration-200"
+                key={category.id || category._id}
+                onClick={() => handleCategoryClick(category.id || category._id, category.name)}
+                className="group relative bg-white border-2 border-gray-200 rounded-lg px-4 sm:px-6 py-2.5 sm:py-3 md:py-4 hover:border-gray-900 hover:shadow-md transition-all duration-200"
               >
-                <h3 className="text-base font-semibold text-gray-900 text-center uppercase tracking-wide">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 text-center uppercase tracking-wide">
                   {category.name}
                 </h3>
               </button>

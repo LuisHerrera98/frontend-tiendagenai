@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, Menu, X, Package } from 'lucide-react'
+import { ShoppingCart, Menu, X, Package, ChevronRight } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useRouter } from 'next/navigation'
+import { api } from '@/lib/api'
 
 interface StoreData {
   id: string
@@ -14,6 +15,16 @@ interface StoreData {
     logo?: string
     primaryColor?: string
   }
+  settings?: {
+    simpleStoreEnabled?: boolean
+    [key: string]: any
+  }
+}
+
+interface Category {
+  id: string
+  _id?: string
+  name: string
 }
 
 interface StoreHeaderProps {
@@ -22,9 +33,26 @@ interface StoreHeaderProps {
 
 export function StoreHeader({ storeData }: StoreHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
   const { getItemsCount } = useCart()
   const router = useRouter()
   const itemsCount = getItemsCount()
+  const isSimpleStore = storeData.settings?.simpleStoreEnabled === true
+
+  useEffect(() => {
+    if (isSimpleStore) {
+      fetchCategories()
+    }
+  }, [storeData.subdomain, isSimpleStore])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get(`/public/categories/${storeData.subdomain}`)
+      setCategories(response.data || [])
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -86,15 +114,52 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
         {/* Menú móvil */}
         {mobileMenuOpen && (
           <nav className="md:hidden py-4 border-t">
-            <div className="flex flex-col space-y-4">
-              <Link href={`/store/${storeData.subdomain}`} className="text-gray-700 hover:text-gray-900">
+            <div className="flex flex-col space-y-3">
+              <Link 
+                href={`/store/${storeData.subdomain}`} 
+                className="text-gray-700 hover:text-gray-900 py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Inicio
               </Link>
-              <Link href={`/store/${storeData.subdomain}/tracking`} className="text-gray-700 hover:text-gray-900 flex items-center gap-2">
+              <Link 
+                href={`/store/${storeData.subdomain}/tracking`} 
+                className="text-gray-700 hover:text-gray-900 flex items-center gap-2 py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 <Package className="w-4 h-4" />
                 Mi Pedido
               </Link>
-              <Link href={`/store/${storeData.subdomain}/contacto`} className="text-gray-700 hover:text-gray-900">
+              
+              {/* Categorías - Solo mostrar si la tienda simple está activa */}
+              {isSimpleStore && categories.length > 0 && (
+                <>
+                  <div className="border-t pt-3 mt-2">
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Categorías
+                    </p>
+                    <div className="flex flex-col space-y-1">
+                      {categories.map((category) => (
+                        <Link
+                          key={category.id || category._id}
+                          href={`/store/${storeData.subdomain}/productos?category=${category.id || category._id}&categoryName=${encodeURIComponent(category.name)}`}
+                          className="text-gray-700 hover:text-gray-900 hover:bg-gray-50 py-2 pl-3 rounded flex items-center justify-between"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <span>{category.name}</span>
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <Link 
+                href={`/store/${storeData.subdomain}/contacto`} 
+                className="text-gray-700 hover:text-gray-900 py-2 border-t pt-5"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Contacto
               </Link>
             </div>

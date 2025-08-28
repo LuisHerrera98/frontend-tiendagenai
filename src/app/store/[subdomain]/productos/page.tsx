@@ -39,35 +39,42 @@ function ProductsContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const subdomain = params.subdomain as string
+  
+  // Obtener valores iniciales de la URL
+  const initialCategory = searchParams.get('category') || ''
+  const initialCategoryName = searchParams.get('categoryName') ? decodeURIComponent(searchParams.get('categoryName')!) : ''
+  const shouldHideFilters = !!searchParams.get('category') // Ocultar filtros si viene con categoría
+  
   const [storeData, setStoreData] = useState<StoreData | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory)
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>(initialCategoryName)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [hideFilters] = useState(shouldHideFilters)
   const limit = 12
 
   useEffect(() => {
-    // Obtener la categoría de los parámetros de URL si existe
-    const categoryFromUrl = searchParams.get('category')
-    const categoryNameFromUrl = searchParams.get('categoryName')
-    
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl)
-      if (categoryNameFromUrl) {
-        setSelectedCategoryName(decodeURIComponent(categoryNameFromUrl))
-      }
-    }
-    
     fetchStoreData()
     fetchCategories()
-  }, [subdomain, searchParams])
+  }, [subdomain])
 
   useEffect(() => {
+    // Actualizar categoría cuando cambie la URL
+    const categoryFromUrl = searchParams.get('category') || ''
+    const categoryNameFromUrl = searchParams.get('categoryName') ? decodeURIComponent(searchParams.get('categoryName')!) : ''
+    
+    setSelectedCategory(categoryFromUrl)
+    setSelectedCategoryName(categoryNameFromUrl)
+    setCurrentPage(1) // Resetear a la primera página cuando cambie la categoría
+  }, [searchParams])
+
+  useEffect(() => {
+    // Llamar a fetchProducts cuando cambie la categoría o página
     fetchProducts()
-  }, [subdomain, selectedCategory, currentPage])
+  }, [selectedCategory, currentPage])
 
   const fetchStoreData = async () => {
     try {
@@ -103,7 +110,9 @@ function ProductsContent() {
         : subdomain
 
       const params = new URLSearchParams()
-      if (selectedCategory) params.append('category', selectedCategory)
+      if (selectedCategory) {
+        params.append('category', selectedCategory)
+      }
       params.append('limit', limit.toString())
       params.append('page', currentPage.toString())
 
@@ -139,46 +148,48 @@ function ProductsContent() {
           )}
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filtros de categorías */}
-          <aside className="lg:w-64">
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="font-semibold mb-4">Categorías</h2>
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setSelectedCategory('')
-                    setSelectedCategoryName('')
-                    setCurrentPage(1)
-                  }}
-                  className={`block w-full text-left px-3 py-2 rounded ${
-                    selectedCategory === '' 
-                      ? 'bg-black text-white' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  Todas las categorías
-                </button>
-                {categories.map((category) => (
+        <div className={hideFilters ? "" : "flex flex-col lg:flex-row gap-8"}>
+          {/* Filtros de categorías - Solo mostrar si no viene de vista simple */}
+          {!hideFilters && (
+            <aside className="lg:w-64">
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h2 className="font-semibold mb-4">Categorías</h2>
+                <div className="space-y-2">
                   <button
-                    key={category.id}
                     onClick={() => {
-                      setSelectedCategory(category.id)
-                      setSelectedCategoryName(category.name)
+                      setSelectedCategory('')
+                      setSelectedCategoryName('')
                       setCurrentPage(1)
                     }}
                     className={`block w-full text-left px-3 py-2 rounded ${
-                      selectedCategory === category.id 
+                      selectedCategory === '' 
                         ? 'bg-black text-white' 
                         : 'hover:bg-gray-100'
                     }`}
                   >
-                    {category.name}
+                    Todas las categorías
                   </button>
-                ))}
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        setSelectedCategory(category.id)
+                        setSelectedCategoryName(category.name)
+                        setCurrentPage(1)
+                      }}
+                      className={`block w-full text-left px-3 py-2 rounded ${
+                        selectedCategory === category.id 
+                          ? 'bg-black text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </aside>
+            </aside>
+          )}
 
           {/* Grid de productos */}
           <div className="flex-1">
