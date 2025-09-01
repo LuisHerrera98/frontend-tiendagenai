@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
-import { Store, Mail, Phone, MapPin, Instagram, Facebook, MessageCircle, Palette, Save, LayoutGrid, ShoppingBag } from 'lucide-react'
+import { Store, Mail, Phone, MapPin, Instagram, Facebook, MessageCircle, Palette, Save, LayoutGrid, ShoppingBag, Truck } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 export default function ConfigurationPage() {
@@ -31,7 +31,10 @@ export default function ConfigurationPage() {
     facebook: '',
     currency: 'ARS',
     timezone: 'America/Argentina/Buenos_Aires',
-    simpleStoreEnabled: false
+    simpleStoreEnabled: false,
+    freeShippingEnabled: false,
+    freeShippingMinAmount: 0,
+    freeShippingText: 'ENVÍOS GRATIS SUPERANDO LOS'
   })
   
   const [customization, setCustomization] = useState({
@@ -376,6 +379,76 @@ export default function ConfigurationPage() {
                 <strong>Vista Simple:</strong> Página inicial con categorías como botones, luego productos filtrados
               </p>
             </div>
+          </div>
+        </Card>
+
+        {/* Configuración de Envío */}
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Truck className="w-5 h-5" />
+            <h2 className="text-xl font-semibold">Configuración de Envío</h2>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Truck className="w-8 h-8 text-gray-600" />
+                <div>
+                  <h3 className="font-medium">Envío Gratis</h3>
+                  <p className="text-sm text-gray-600">
+                    Muestra un banner en la parte superior de la tienda con el mensaje de envío gratis
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.freeShippingEnabled}
+                  onChange={(e) => setSettings({...settings, freeShippingEnabled: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+              </label>
+            </div>
+            
+            {settings.freeShippingEnabled && (
+              <div className="space-y-4 mt-4">
+                <div>
+                  <Label htmlFor="freeShippingText">Texto del Banner</Label>
+                  <Input
+                    id="freeShippingText"
+                    value={settings.freeShippingText}
+                    onChange={(e) => setSettings({...settings, freeShippingText: e.target.value})}
+                    placeholder="ENVÍOS GRATIS SUPERANDO LOS"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Este texto aparecerá antes del monto mínimo</p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="freeShippingMinAmount">Monto Mínimo para Envío Gratis</Label>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-gray-600">$</span>
+                    <Input
+                      id="freeShippingMinAmount"
+                      type="text"
+                      value={settings.freeShippingMinAmount || ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        setSettings({...settings, freeShippingMinAmount: value ? parseInt(value) : 0})
+                      }}
+                      placeholder="130000"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Monto mínimo de compra para obtener envío gratis</p>
+                </div>
+                
+                <div className="p-4 bg-gray-900 rounded-lg">
+                  <p className="text-white text-center text-sm font-medium">
+                    Vista previa: {settings.freeShippingText} ${(settings.freeShippingMinAmount || 0).toLocaleString('es-AR')}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 

@@ -30,9 +30,9 @@ export function ProductCard({ product }: ProductCardProps) {
     : '/placeholder-product.jpg'
   
   return (
-    <div className="bg-white rounded border hover:shadow-md transition-all duration-200 group">
-      <Link href={`/producto/${product.id}`}>
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
+    <div className="bg-white rounded-lg overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-200 group flex flex-col h-full">
+      <Link href={`/producto/${product.id}`} className="block">
+        <div className="relative aspect-square overflow-hidden bg-gray-50">
           {product.images?.[0] ? (
             <img
               src={imageUrl}
@@ -44,36 +44,33 @@ export function ProductCard({ product }: ProductCardProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <ShoppingCart className="w-8 h-8" />
+              <ShoppingCart className="w-12 h-12" />
             </div>
           )}
         </div>
       </Link>
       
-      <div className="p-3">
-        <Link href={`/producto/${product.id}`}>
-          <h3 className="text-sm font-medium text-gray-900 hover:text-gray-700 line-clamp-2 mb-1">
+      <div className="p-3 sm:p-4 flex flex-col flex-grow">
+        <Link href={`/producto/${product.id}`} className="flex-grow">
+          <h3 className="text-xs sm:text-sm font-medium text-gray-900 hover:text-gray-700 line-clamp-2 uppercase mb-1">
             {product.name}
           </h3>
         </Link>
         
-        {product.brand.name && (
-          <p className="text-xs text-gray-500 mb-2">{product.brand.name}</p>
-        )}
-        
-        <div className="flex items-center justify-between">
-          <p className="text-base font-bold text-gray-900">
+        <div className="mt-auto">
+          <p className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
             ${product.price.toLocaleString('es-AR')}
           </p>
           
           <button 
-            className="p-1.5 bg-black text-white rounded hover:bg-gray-800 transition"
-            onClick={() => {
+            className="w-full py-2.5 px-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+            onClick={(e) => {
+              e.preventDefault()
               // TODO: Implementar agregar al carrito
-              console.log('Agregar al carrito:', product.id)
+              console.log('Comprar:', product.id)
             }}
           >
-            <ShoppingCart className="w-3.5 h-3.5" />
+            Comprar
           </button>
         </div>
       </div>

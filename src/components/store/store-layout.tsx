@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { StoreHeader } from './store-header'
 import { StoreFooter } from './store-footer'
 import { WhatsAppButton } from './whatsapp-button'
+import { FreeShippingBanner } from './free-shipping-banner'
 import type { StoreData } from '@/types'
 
 interface StoreLayoutProps {
@@ -24,6 +25,12 @@ export function StoreLayout({ children, storeData }: StoreLayoutProps) {
           --store-secondary: ${secondaryColor};
         }
       `}</style>
+      
+      <FreeShippingBanner 
+        enabled={storeData.settings?.freeShippingEnabled}
+        minAmount={storeData.settings?.freeShippingMinAmount}
+        text={storeData.settings?.freeShippingText}
+      />
       
       <StoreHeader storeData={storeData} />
       
