@@ -232,8 +232,17 @@ export function ProductCatalog({ subdomain }: ProductCatalogProps) {
           ) : products.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {products.map((product, index) => (
+                  <div 
+                    key={product.id}
+                    style={{ 
+                      animationDelay: `${index * 0.1}s`,
+                      opacity: 0,
+                      animation: 'fadeInUp 0.9s ease-out forwards'
+                    }}
+                  >
+                    <ProductCard product={product} />
+                  </div>
                 ))}
               </div>
 

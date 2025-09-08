@@ -83,6 +83,13 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute right-4 top-4 p-1 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Cerrar</span>
+        </button>
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900">Detalles del Producto</DialogTitle>
           <p className="text-sm text-gray-600">Vista completa del producto #{product.code}</p>
@@ -197,7 +204,7 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
                   <div>
-                    <Label className="text-sm text-gray-600">Precio de Venta</Label>
+                    <Label className="text-sm text-gray-600">Precio Lista (Tarjeta)</Label>
                     <p className="text-2xl font-bold text-blue-600">
                       ${Math.floor(product.price) === product.price ? product.price.toLocaleString() : product.price.toFixed(2)}
                     </p>
@@ -220,6 +227,24 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
                     </p>
                   </div>
                 </div>
+
+                {product.cashPrice && product.cashPrice > 0 && (
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div>
+                      <Label className="text-sm text-gray-600">Precio Efectivo/Transferencia</Label>
+                      <div className="flex items-baseline gap-3">
+                        <p className="text-2xl font-bold text-green-600">
+                          ${Math.floor(product.cashPrice) === product.cashPrice ? product.cashPrice.toLocaleString() : product.cashPrice.toFixed(2)}
+                        </p>
+                        {product.price > product.cashPrice && (
+                          <span className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+                            Ahorra ${(product.price - product.cashPrice).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div>

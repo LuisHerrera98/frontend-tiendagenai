@@ -37,6 +37,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form'
 
 const productSchema = z.object({
@@ -46,6 +47,7 @@ const productSchema = z.object({
   category_id: z.string().optional(),
   cost: z.number().min(0, 'El costo debe ser mayor a 0'),
   price: z.number().min(0, 'El precio debe ser mayor a 0'),
+  cashPrice: z.number().min(0).optional(),
   discount: z.number().min(0).max(100).optional(),
   active: z.boolean(),
   gender_id: z.string().optional(),
@@ -60,6 +62,7 @@ type ProductFormData = {
   category_id?: string
   cost: number
   price: number
+  cashPrice?: number
   discount?: number
   active: boolean
   gender_id?: string
@@ -203,6 +206,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
         ...data,
         cost: typeof data.cost === 'string' ? parseFloat(data.cost) || 0 : data.cost,
         price: typeof data.price === 'string' ? parseFloat(data.price) || 0 : data.price,
+        cashPrice: data.cashPrice ? (typeof data.cashPrice === 'string' ? parseFloat(data.cashPrice) || 0 : data.cashPrice) : undefined,
         discount: typeof data.discount === 'string' ? parseFloat(data.discount) || 0 : data.discount,
         stock,
         stockType,
@@ -432,7 +436,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
               )}
             />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="cost"
@@ -462,7 +466,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Precio</FormLabel>
+                    <FormLabel>Precio Lista (Tarjeta)</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -476,6 +480,33 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                         placeholder="0.00" 
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cashPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Precio Efectivo/Transferencia</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01"
+                        {...field}
+                        onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(value === '' ? '' : parseFloat(value) || 0)
+                        }}
+                        placeholder="0.00 (Opcional)" 
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Precio con descuento para pagos en efectivo o transferencia
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -498,7 +529,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                           const value = e.target.value
                           field.onChange(value === '' ? '' : parseFloat(value) || 0)
                         }}
-                        placeholder="0%" 
+                        placeholder="0" 
                       />
                     </FormControl>
                     <FormMessage />

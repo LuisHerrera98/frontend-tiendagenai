@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { CustomSelect } from '@/components/ui/custom-select'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     name: '',
     price: '',
     cost: '',
+    cashPrice: '',
     type_id: '',
     brand_id: '',
     gender_id: '',
@@ -153,6 +154,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
         name: product.name || '',
         price: product.price?.toString() || '',
         cost: product.cost?.toString() || '',
+        cashPrice: product.cashPrice?.toString() || '',
         type_id: product.type_id || '',
         brand_id: product.brand_id || '',
         category_id: product.category_id || '',
@@ -228,6 +230,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       name: formData.name,
       price: parseFloat(formData.price),
       cost: parseFloat(formData.cost),
+      cashPrice: formData.cashPrice ? parseFloat(formData.cashPrice) : undefined,
       type_id: formData.type_id,
       brand_id: formData.brand_id,
       category_id: formData.category_id,
@@ -256,6 +259,13 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-white">
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute right-4 top-4 p-1 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Cerrar</span>
+        </button>
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900">Editar Producto</DialogTitle>
           <p className="text-sm text-gray-600">Modifica los datos del producto</p>
@@ -404,7 +414,19 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Precio</Label>
+              <Label htmlFor="cost">Costo</Label>
+              <Input
+                id="cost"
+                type="number"
+                step="0.01"
+                value={formData.cost}
+                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Precio Lista (Tarjeta)</Label>
               <Input
                 id="price"
                 type="number"
@@ -416,15 +438,16 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cost">Costo</Label>
+              <Label htmlFor="cashPrice">Precio Efectivo/Transferencia</Label>
               <Input
-                id="cost"
+                id="cashPrice"
                 type="number"
                 step="0.01"
-                value={formData.cost}
-                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                required
+                value={formData.cashPrice}
+                onChange={(e) => setFormData({ ...formData, cashPrice: e.target.value })}
+                placeholder="Opcional"
               />
+              <p className="text-xs text-gray-500">Precio con descuento para pagos en efectivo o transferencia</p>
             </div>
 
             <div className="space-y-2">
@@ -520,13 +543,14 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
                   <Input
                     type="number"
                     min="0"
-                    value={productSizes['pack']?.quantity || product?.stock?.[0]?.quantity || 0}
+                    value={productSizes['pack']?.quantity !== undefined ? productSizes['pack'].quantity : (product?.stock?.[0]?.quantity || 0)}
                     onChange={(e) => {
-                      const newQuantity = parseInt(e.target.value) || 0;
+                      const value = e.target.value;
+                      const newQuantity = value === '' ? 0 : parseInt(value);
                       setProductSizes({
                         'pack': {
                           name: 'PAQUETE',
-                          quantity: newQuantity,
+                          quantity: isNaN(newQuantity) ? 0 : Math.max(0, newQuantity),
                           selected: true
                         }
                       });

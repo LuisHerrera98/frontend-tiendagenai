@@ -5,6 +5,15 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { Search, Package, Clock, CheckCircle, Truck, XCircle, Phone, MessageSquare } from 'lucide-react'
 import { api } from '@/lib/api'
 import Image from 'next/image'
+import { StoreLayout } from '@/components/store/store-layout'
+
+interface StoreData {
+  id: string
+  subdomain: string
+  storeName: string
+  customization?: any
+  settings?: any
+}
 
 interface OrderData {
   orderNumber: string
@@ -60,7 +69,13 @@ export default function TrackingPage() {
   const [orderData, setOrderData] = useState<OrderData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [storeData, setStoreData] = useState<StoreData | null>(null)
+  const [storeLoading, setStoreLoading] = useState(true)
   const subdomain = params.subdomain as string
+
+  useEffect(() => {
+    fetchStoreData()
+  }, [subdomain])
 
   useEffect(() => {
     // Si viene con número de orden en la URL, buscarlo automáticamente
@@ -85,6 +100,22 @@ export default function TrackingPage() {
     }
   }, [subdomain, searchParams])
 
+  const fetchStoreData = async () => {
+    try {
+      setStoreLoading(true)
+      const targetSubdomain = process.env.NODE_ENV === 'development' && subdomain === 'test' 
+        ? localStorage.getItem('tenant_subdomain') || subdomain
+        : subdomain
+
+      const response = await api.get(`/public/store/${targetSubdomain}`)
+      setStoreData(response.data)
+    } catch (err) {
+      console.error('Error fetching store:', err)
+    } finally {
+      setStoreLoading(false)
+    }
+  }
+
   const searchOrder = async (orderNum?: string) => {
     const searchNumber = orderNum || orderNumber
     if (!searchNumber) {
@@ -96,40 +127,51 @@ export default function TrackingPage() {
     setError('')
 
     try {
-      // Intentar buscar en la API
-      const response = await api.get(`/public/order-status/${subdomain}/${searchNumber}`)
-      
-      if (response.data) {
-        const orderInfo: OrderData = {
-          orderNumber: response.data.orderNumber,
-          date: new Date(response.data.createdAt).toLocaleDateString(),
-          status: response.data.status,
-          customerName: response.data.customerName,
-          customerPhone: response.data.customerPhone,
-          customerEmail: response.data.customerEmail,
-          total: response.data.total,
-          items: response.data.items,
-          estimatedDelivery: response.data.estimatedDelivery,
-          storePhone: response.data.storePhone,
-          storeWhatsapp: response.data.storeWhatsapp
-        }
-        
-        setOrderData(orderInfo)
-        // Guardar en localStorage para acceso rápido
-        localStorage.setItem(`order_${searchNumber}`, JSON.stringify(orderInfo))
-      }
-    } catch (err) {
-      // Si no encuentra en API, buscar en localStorage
+      // Primero buscar en localStorage (más rápido)
       const localOrder = localStorage.getItem(`order_${searchNumber}`)
       if (localOrder) {
         try {
-          setOrderData(JSON.parse(localOrder))
+          const parsedOrder = JSON.parse(localOrder)
+          // Asegurarse de que el status sea válido, si no, usar 'pending'
+          if (!parsedOrder.status || !statusInfo[parsedOrder.status]) {
+            parsedOrder.status = 'pending'
+          }
+          
+          // Formatear la fecha correctamente
+          if (parsedOrder.date) {
+            // Si la fecha viene en formato ISO (con hora), convertirla
+            if (parsedOrder.date.includes('T') || parsedOrder.date.includes(':')) {
+              const dateObj = new Date(parsedOrder.date)
+              // Ajustar a zona horaria de Argentina (-3 horas)
+              parsedOrder.date = dateObj.toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric',
+                timeZone: 'America/Argentina/Buenos_Aires'
+              })
+            }
+            // Si ya está en formato correcto, dejarlo como está
+          }
+          
+          setOrderData(parsedOrder)
+          setLoading(false)
+          return
         } catch (e) {
-          setError('No pudimos encontrar tu pedido. Verifica el número e intenta nuevamente.')
+          console.log('Error parsing local order:', e)
         }
-      } else {
-        setError('No pudimos encontrar tu pedido. Verifica el número e intenta nuevamente.')
       }
+      
+      // No intentar llamar a la API si no existe el endpoint
+      // Solo usar localStorage para el tracking
+      // La API de tracking aún no está implementada en el backend
+      
+      // Si no se encontró en ninguna parte
+      if (!orderData && !localOrder) {
+        setError('No pudimos encontrar tu pedido. Verifica el código e intenta nuevamente.')
+      }
+    } catch (err) {
+      console.error('Error searching order:', err)
+      setError('Ocurrió un error al buscar tu pedido. Por favor intenta nuevamente.')
     } finally {
       setLoading(false)
     }
@@ -159,9 +201,18 @@ export default function TrackingPage() {
     window.location.href = `tel:${orderData.storePhone}`
   }
 
+  if (storeLoading || !storeData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <StoreLayout storeData={storeData}>
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -178,15 +229,15 @@ export default function TrackingPage() {
             <input
               type="text"
               value={orderNumber}
-              onChange={(e) => setOrderNumber(e.target.value.toUpperCase())}
+              onChange={(e) => setOrderNumber(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && searchOrder()}
-              placeholder="Ej: ORD-12345"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+              placeholder="Ingresa tu código de seguimiento"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-base"
             />
             <button
               onClick={() => searchOrder()}
               disabled={loading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -205,21 +256,23 @@ export default function TrackingPage() {
         {orderData && (
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* Status Card */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Pedido #{orderData.orderNumber}
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Realizado el {orderData.date}
-                  </p>
-                </div>
-                <div className={`px-4 py-2 rounded-full ${statusInfo[orderData.status].color} flex items-center gap-2`}>
-                  <StatusIcon className="w-5 h-5" />
-                  <span className="font-medium">
-                    {statusInfo[orderData.status].label}
-                  </span>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 overflow-hidden">
+              <div className="mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 break-all">
+                      Pedido #{orderData.orderNumber}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Realizado el {orderData.date}
+                    </p>
+                  </div>
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${statusInfo[orderData.status].color} self-start`}>
+                    <StatusIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">
+                      {statusInfo[orderData.status].label}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -230,17 +283,17 @@ export default function TrackingPage() {
                     <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
                       <div
                         style={{ width: `${getProgressPercentage()}%` }}
-                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-500"
+                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-black transition-all duration-500"
                       />
                     </div>
                     <div className="flex justify-between text-xs text-gray-600">
-                      <span className={orderData.status === 'pending' ? 'font-bold text-blue-600' : ''}>
-                        Recibido
+                      <span className={orderData.status === 'pending' ? 'font-bold text-black' : ''}>
+                        Pendiente
                       </span>
-                      <span className={orderData.status === 'armado' ? 'font-bold text-blue-600' : ''}>
+                      <span className={orderData.status === 'armado' ? 'font-bold text-black' : ''}>
                         Preparando
                       </span>
-                      <span className={orderData.status === 'entregado' ? 'font-bold text-blue-600' : ''}>
+                      <span className={orderData.status === 'entregado' ? 'font-bold text-black' : ''}>
                         Entregado
                       </span>
                     </div>
@@ -248,8 +301,8 @@ export default function TrackingPage() {
                 </div>
               )}
 
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-                <p className="text-blue-700">
+              <div className="bg-gray-50 border-l-4 border-gray-400 p-4 mb-6 rounded">
+                <p className="text-gray-700">
                   {statusInfo[orderData.status].message}
                 </p>
                 {orderData.status === 'armado' && orderData.estimatedDelivery && (
@@ -310,7 +363,7 @@ export default function TrackingPage() {
                         Talle: {item.sizeName} • Cantidad: {item.quantity}
                       </p>
                       <p className="text-sm font-medium mt-1">
-                        ${item.price * item.quantity}
+                        ${(item.price * item.quantity).toLocaleString('es-AR')}
                       </p>
                     </div>
                   </div>
@@ -321,8 +374,8 @@ export default function TrackingPage() {
               <div className="mt-6 pt-4 border-t">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    ${orderData.total}
+                  <span className="text-2xl font-bold text-gray-900">
+                    ${orderData.total?.toLocaleString('es-AR') || '0'}
                   </span>
                 </div>
               </div>
@@ -358,5 +411,6 @@ export default function TrackingPage() {
         </div>
       </div>
     </div>
+    </StoreLayout>
   )
 }

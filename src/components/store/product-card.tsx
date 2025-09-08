@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { ShoppingCart, Heart } from 'lucide-react'
 import { getProductImage } from '@/lib/cloudinary-transforms'
+import { QuickBuyModal } from './quick-buy-modal'
+import { useParams } from 'next/navigation'
 
 interface Product {
   id: string
@@ -25,13 +28,17 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const [showQuickBuy, setShowQuickBuy] = useState(false)
+  const params = useParams()
+  const subdomain = params.subdomain as string
+  
   const imageUrl = product.images?.[0] 
     ? getProductImage(product.images[0], 'card')
     : '/placeholder-product.jpg'
   
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-200 group flex flex-col h-full">
-      <Link href={`/producto/${product.id}`} className="block">
+      <Link href={`/store/${subdomain}/producto/${product.id}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-gray-50">
           {product.images?.[0] ? (
             <img
@@ -51,7 +58,7 @@ export function ProductCard({ product }: ProductCardProps) {
       </Link>
       
       <div className="p-3 sm:p-4 flex flex-col flex-grow">
-        <Link href={`/producto/${product.id}`} className="flex-grow">
+        <Link href={`/store/${subdomain}/producto/${product.id}`} className="flex-grow">
           <h3 className="text-xs sm:text-sm font-medium text-gray-900 hover:text-gray-700 line-clamp-2 uppercase mb-1">
             {product.name}
           </h3>
@@ -66,14 +73,21 @@ export function ProductCard({ product }: ProductCardProps) {
             className="w-full py-2.5 px-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
             onClick={(e) => {
               e.preventDefault()
-              // TODO: Implementar agregar al carrito
-              console.log('Comprar:', product.id)
+              setShowQuickBuy(true)
             }}
           >
             Comprar
           </button>
         </div>
       </div>
+      
+      {/* Quick Buy Modal */}
+      <QuickBuyModal
+        isOpen={showQuickBuy}
+        onClose={() => setShowQuickBuy(false)}
+        productId={product.id}
+        subdomain={subdomain}
+      />
     </div>
   )
 }

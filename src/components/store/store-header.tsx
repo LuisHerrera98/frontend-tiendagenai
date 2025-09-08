@@ -55,15 +55,18 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
   }
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header className="bg-white border-b border-gray-200">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Menú hamburguesa - lado izquierdo */}
           <button 
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              mobileMenuOpen ? 'bg-gray-100' : 'hover:bg-gray-100'
+            }`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <Menu className="w-6 h-6" />
           </button>
 
           {/* Logo/Nombre - centro */}
@@ -97,10 +100,47 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
           </button>
         </div>
 
-        {/* Menú desplegable */}
+        {/* Overlay de fondo cuando el menú está abierto */}
         {mobileMenuOpen && (
-          <nav className="absolute top-16 left-0 right-0 bg-white shadow-lg border-t">
-            <div className="container mx-auto px-4 py-4">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* Menú desplegable con animación */}
+        <nav className={`fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 overflow-y-auto transform transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
+            <div className="px-4 py-4">
+              {/* Header del menú con botón de cerrar */}
+              <div className="flex items-center justify-between mb-6">
+                <Link 
+                  href={`/store/${storeData.subdomain}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center"
+                >
+                  {storeData.customization?.logo ? (
+                    <img 
+                      src={storeData.customization.logo} 
+                      alt={storeData.storeName}
+                      className="h-8 w-auto"
+                    />
+                  ) : (
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {storeData.storeName}
+                    </h2>
+                  )}
+                </Link>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Cerrar menú"
+                >
+                  <X className="w-6 h-6 text-gray-600" />
+                </button>
+              </div>
+              
               <div className="flex flex-col space-y-1">
                 <Link 
                   href={`/store/${storeData.subdomain}`} 
@@ -152,7 +192,6 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
               </div>
             </div>
           </nav>
-        )}
       </div>
     </header>
   )

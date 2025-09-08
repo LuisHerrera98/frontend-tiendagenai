@@ -10,6 +10,7 @@ export interface Product {
   color_id?: string
   cost: number
   price: number
+  cashPrice?: number
   discount: number
   active: boolean
   gender_id?: string
@@ -87,6 +88,7 @@ export interface CreateProductDto {
   color_id?: string
   cost: number
   price: number
+  cashPrice?: number
   discount?: number
   active?: boolean
   gender?: 'hombre' | 'mujer' | 'unisex'

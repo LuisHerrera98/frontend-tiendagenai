@@ -258,8 +258,17 @@ function ProductsContent() {
             ) : products.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                  {products.map((product, index) => (
+                    <div 
+                      key={product.id} 
+                      style={{ 
+                        animationDelay: `${index * 0.12}s`,
+                        opacity: 0,
+                        animation: 'fadeInUp 0.9s ease-out forwards'
+                      }}
+                    >
+                      <ProductCard product={product} />
+                    </div>
                   ))}
                 </div>
 

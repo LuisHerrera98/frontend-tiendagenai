@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import { useCart } from '@/contexts/cart-context'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { OrderConfirmationModal } from '@/components/store/order-confirmation-modal'
 
 interface StoreData {
   id: string
@@ -31,6 +32,10 @@ export default function CheckoutPage() {
   const [storeData, setStoreData] = useState<StoreData | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+  const [confirmedOrderId, setConfirmedOrderId] = useState('')
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [orderCompleted, setOrderCompleted] = useState(false)
   
   const { items, getTotalWithDiscount, clearCart } = useCart()
   
@@ -44,11 +49,11 @@ export default function CheckoutPage() {
   useEffect(() => {
     fetchStoreData()
     
-    // Redirigir si el carrito está vacío
-    if (items.length === 0) {
+    // Redirigir si el carrito está vacío (pero no si ya se completó un pedido)
+    if (items.length === 0 && !orderCompleted) {
       router.push(`/store/${subdomain}/carrito`)
     }
-  }, [subdomain, items])
+  }, [subdomain, items, orderCompleted])
 
   const fetchStoreData = async () => {
     try {
@@ -76,9 +81,29 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setValidationErrors([])
     
-    if (!formData.customerName || !formData.customerPhone) {
-      alert('Por favor completa todos los campos obligatorios')
+    const errors: string[] = []
+    
+    if (!formData.customerName.trim()) {
+      errors.push('El nombre es obligatorio')
+    }
+    
+    if (!formData.customerPhone.trim()) {
+      errors.push('El teléfono es obligatorio')
+    }
+    
+    if (!formData.customerEmail.trim()) {
+      errors.push('El email es obligatorio')
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.customerEmail)) {
+        errors.push('El email no es válido')
+      }
+    }
+    
+    if (errors.length > 0) {
+      setValidationErrors(errors)
       return
     }
 
@@ -92,7 +117,8 @@ export default function CheckoutPage() {
       // Validar que todos los items tengan sizeId
       const invalidItems = items.filter(item => !item.sizeId)
       if (invalidItems.length > 0) {
-        alert('Error: Algunos productos en el carrito no tienen talle seleccionado. Por favor revisa tu carrito.')
+        setValidationErrors(['Error: Algunos productos en el carrito no tienen talle seleccionado. Por favor revisa tu carrito.'])
+        setSubmitting(false)
         return
       }
       
@@ -134,7 +160,12 @@ export default function CheckoutPage() {
         // Guardar información completa del pedido
         const orderInfo = {
           orderNumber: orderNumber,
-          date: new Date().toISOString(),
+          date: new Date().toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'America/Argentina/Buenos_Aires'
+          }),
           status: 'pending',
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
@@ -154,16 +185,19 @@ export default function CheckoutPage() {
         // Guardar con el número de orden para búsquedas
         localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderInfo))
         
-        // Limpiar carrito
+        // Marcar el pedido como completado para evitar redirección
+        setOrderCompleted(true)
+        
+        // Configurar el modal y limpiar el carrito
+        setConfirmedOrderId(orderNumber)
+        setShowConfirmationModal(true)
         clearCart()
-
-        // Redirigir a página de confirmación
-        router.push(`/store/${subdomain}/pedido-confirmado?orderId=${orderNumber}`)
       }
       
     } catch (error: any) {
       console.error('Error creating order:', error)
-      alert(error.response?.data?.message || 'Error al crear el pedido. Por favor intenta nuevamente.')
+      const errorMessage = error.response?.data?.message || 'Error al crear el pedido. Por favor intenta nuevamente.'
+      setValidationErrors([errorMessage])
     } finally {
       setSubmitting(false)
     }
@@ -233,7 +267,7 @@ export default function CheckoutPage() {
 
                   <div>
                     <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email (opcional)
+                      Email *
                     </label>
                     <input
                       type="email"
@@ -241,6 +275,8 @@ export default function CheckoutPage() {
                       name="customerEmail"
                       value={formData.customerEmail}
                       onChange={handleInputChange}
+                      required
+                      placeholder="ejemplo@correo.com"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                     />
                   </div>
@@ -261,6 +297,30 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Errores de validación */}
+              {validationErrors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-red-800 mb-1">
+                        Por favor corrige los siguientes errores:
+                      </p>
+                      <ul className="text-sm text-red-700 space-y-1">
+                        {validationErrors.map((error, index) => (
+                          <li key={index} className="flex items-start gap-1">
+                            <span className="text-red-500 mt-1">•</span>
+                            <span>{error}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -326,6 +386,14 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      
+      {/* Modal de confirmación */}
+      <OrderConfirmationModal
+        isOpen={showConfirmationModal}
+        orderId={confirmedOrderId}
+        subdomain={subdomain}
+        customerEmail={formData.customerEmail}
+      />
     </StoreLayout>
   )
 }
