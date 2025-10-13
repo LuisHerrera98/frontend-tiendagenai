@@ -35,7 +35,7 @@ export function ProductTableInfinite({
   const { hasPermission } = useAuth()
   const canEdit = hasPermission(Permission.PRODUCTS_EDIT)
   const canDelete = hasPermission(Permission.PRODUCTS_DELETE)
-  const canViewCosts = hasPermission(Permission.PRODUCTS_COSTS)
+  const canViewCosts = hasPermission(Permission.PRODUCTS_VIEW_COSTS)
 
   // Ref para el observador de intersección
   const observerTarget = useRef<HTMLDivElement>(null)

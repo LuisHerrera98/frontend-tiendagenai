@@ -9,6 +9,7 @@ interface Product {
   name: string
   description: string
   price: number
+  cashPrice?: number
   images: string[]
   category: {
     id: string

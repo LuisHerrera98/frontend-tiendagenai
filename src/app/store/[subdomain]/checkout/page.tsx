@@ -8,6 +8,7 @@ import { useCart } from '@/contexts/cart-context'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { OrderConfirmationModal } from '@/components/store/order-confirmation-modal'
+import { MercadoPagoCheckout } from '@/components/store/mercadopago-checkout'
 
 interface StoreData {
   id: string
@@ -36,6 +37,8 @@ export default function CheckoutPage() {
   const [confirmedOrderId, setConfirmedOrderId] = useState('')
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [orderCompleted, setOrderCompleted] = useState(false)
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+  const [paymentConfig, setPaymentConfig] = useState<any>(null)
   
   const { items, getTotalWithDiscount, clearCart } = useCart()
   
@@ -48,12 +51,13 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     fetchStoreData()
+    fetchPaymentConfig()
     
     // Redirigir si el carrito está vacío (pero no si ya se completó un pedido)
-    if (items.length === 0 && !orderCompleted) {
+    if (items.length === 0 && !orderCompleted && !createdOrderId) {
       router.push(`/store/${subdomain}/carrito`)
     }
-  }, [subdomain, items, orderCompleted])
+  }, [subdomain, items, orderCompleted, createdOrderId])
 
   const fetchStoreData = async () => {
     try {
@@ -68,6 +72,19 @@ export default function CheckoutPage() {
       console.error('Error fetching store:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPaymentConfig = async () => {
+    try {
+      const targetSubdomain = process.env.NODE_ENV === 'development' && subdomain === 'test' 
+        ? localStorage.getItem('tenant_subdomain') || subdomain
+        : subdomain
+
+      const response = await api.get(`/public/payment-config/${targetSubdomain}`)
+      setPaymentConfig(response.data)
+    } catch (err) {
+      console.error('Error fetching payment config:', err)
     }
   }
 
@@ -185,13 +202,17 @@ export default function CheckoutPage() {
         // Guardar con el número de orden para búsquedas
         localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderInfo))
         
-        // Marcar el pedido como completado para evitar redirección
-        setOrderCompleted(true)
-        
-        // Configurar el modal y limpiar el carrito
-        setConfirmedOrderId(orderNumber)
-        setShowConfirmationModal(true)
-        clearCart()
+        // Si Mercado Pago está habilitado, guardar el ID de la orden
+        if (paymentConfig?.enabled && paymentConfig?.available) {
+          setCreatedOrderId(orderNumber)
+          setOrderCompleted(true)
+        } else {
+          // Si no hay MP, mostrar modal de confirmación normal
+          setOrderCompleted(true)
+          setConfirmedOrderId(orderNumber)
+          setShowConfirmationModal(true)
+          clearCart()
+        }
       }
       
     } catch (error: any) {
@@ -322,14 +343,49 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'Procesando...' : 'Confirmar pedido'}
-              </button>
+              {!createdOrderId && (
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Procesando...' : 'Confirmar pedido'}
+                </button>
+              )}
             </form>
+            
+            {/* Mostrar opciones de pago si el pedido fue creado y MP está habilitado */}
+            {createdOrderId && paymentConfig?.enabled && paymentConfig?.available && (
+              <div className="mt-6">
+                <MercadoPagoCheckout
+                  orderId={createdOrderId}
+                  subdomain={subdomain}
+                  onSuccess={() => {
+                    clearCart()
+                    router.push(`/store/${subdomain}/payment-success`)
+                  }}
+                  onError={(error) => {
+                    console.error('Payment error:', error)
+                  }}
+                />
+                
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600 text-center">
+                    O puedes coordinar el pago directamente con la tienda
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowConfirmationModal(true)
+                      setConfirmedOrderId(createdOrderId)
+                      clearCart()
+                    }}
+                    className="w-full mt-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 underline"
+                  >
+                    Continuar sin pago online
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Resumen del pedido */}

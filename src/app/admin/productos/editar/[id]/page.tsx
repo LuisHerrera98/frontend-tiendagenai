@@ -30,9 +30,9 @@ export default function EditProductPage() {
   const { hasPermission } = useAuth()
 
   // Check permissions
-  const canViewCosts = hasPermission(Permission.PRODUCTS_COSTS)
-  const canManageStock = hasPermission(Permission.PRODUCTS_STOCK)
-  const canManageDiscounts = hasPermission(Permission.PRODUCTS_DISCOUNTS)
+  const canViewCosts = hasPermission(Permission.PRODUCTS_VIEW_COSTS)
+  const canManageStock = hasPermission(Permission.PRODUCTS_MANAGE_STOCK)
+  const canManageDiscounts = hasPermission(Permission.PRODUCTS_MANAGE_DISCOUNTS)
   const canEdit = hasPermission(Permission.PRODUCTS_EDIT)
 
   // If user doesn't have edit permission, make everything readonly

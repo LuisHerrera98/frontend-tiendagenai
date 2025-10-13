@@ -38,6 +38,9 @@ export interface ProductStock {
 export interface Category {
   _id: string
   name: string
+  parent_id?: string | null
+  productsCount?: number
+  subcategories?: Category[]
   createdAt: string
   updatedAt: string
 }

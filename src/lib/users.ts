@@ -13,13 +13,13 @@ export interface TenantUser {
   employeeCode?: string;
   lastLogin?: string;
   createdAt?: string;
-  createdBy?: string;
+  createdBy?: string; // null/undefined = admin principal, string = admin secundario
 }
 
 export interface CreateUserDto {
+  name: string;
   email: string;
   password: string;
-  name: string;
   role: UserRole;
   permissions?: Permission[];
   phone?: string;

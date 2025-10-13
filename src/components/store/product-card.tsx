@@ -12,6 +12,7 @@ interface Product {
   name: string
   description: string
   price: number
+  cashPrice?: number
   images: string[]
   category: {
     id: string
@@ -65,9 +66,23 @@ export function ProductCard({ product }: ProductCardProps) {
         </Link>
         
         <div className="mt-auto">
-          <p className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-            ${product.price.toLocaleString('es-AR')}
-          </p>
+          {/* Precios */}
+          <div className="mb-2 space-y-1">
+            {/* Precio de lista (siempre visible) */}
+            <p className="text-lg sm:text-xl font-bold text-gray-900">
+              ${product.price.toLocaleString('es-AR')}
+            </p>
+            
+            {/* Precio efectivo/transferencia (si existe y es menor) */}
+            {product.cashPrice && product.cashPrice < product.price && (
+              <div className="flex items-baseline gap-1">
+                <p className="text-base sm:text-lg font-bold text-green-700">
+                  ${product.cashPrice.toLocaleString('es-AR')}
+                </p>
+                <span className="text-xs text-green-600">Efectivo</span>
+              </div>
+            )}
+          </div>
           
           <button 
             className="w-full py-2.5 px-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"

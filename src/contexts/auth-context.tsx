@@ -55,10 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const user = JSON.parse(userData);
           setUser(user);
           
-          // Configurar rol y permisos
+          // Configurar rol y permisos - ASEGURAR QUE SE LEAN LOS PERMISOS
           if (user.role) {
             setRole(user.role as UserRole);
-            setPermissions(user.permissions || []);
+            const storedPermissions = user.permissions || [];
+            setPermissions(storedPermissions);
           }
           
           // Si hay tiendas, cargar la tienda activa
@@ -112,10 +113,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(response.user);
       
-      // Configurar rol y permisos
+      // Configurar rol y permisos - ASEGURAR QUE SE GUARDEN LOS PERMISOS
       if (response.user.role) {
         setRole(response.user.role as UserRole);
-        setPermissions(response.user.permissions || []);
+        // Los permisos deben venir del usuario
+        const userPermissions = response.user.permissions || [];
+        setPermissions(userPermissions);
       }
       
       // Redirigir al dashboard normal (sin cambiar de subdominio en desarrollo)

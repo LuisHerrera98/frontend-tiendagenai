@@ -7,7 +7,6 @@ import { Permission, UserRole, PERMISSION_CATEGORIES, DEFAULT_PERMISSIONS } from
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
@@ -118,13 +117,11 @@ interface UserModalProps {
 }
 
 const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) => {
+  const { tenant } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    phone: '',
-    address: '',
-    employeeCode: '',
     role: UserRole.VENDEDOR,
     active: true
   });
@@ -133,6 +130,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [generatedEmail, setGeneratedEmail] = useState('');
 
   const isEditing = !!user;
 
@@ -142,9 +140,6 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
         name: user.name || '',
         email: user.email || '',
         password: '',
-        phone: user.phone || '',
-        address: user.address || '',
-        employeeCode: user.employeeCode || '',
         role: user.role || UserRole.VENDEDOR,
         active: user.active !== false
       });
@@ -154,16 +149,32 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
         name: '',
         email: '',
         password: '',
-        phone: '',
-        address: '',
-        employeeCode: '',
         role: UserRole.VENDEDOR,
         active: true
       });
       setSelectedPermissions(DEFAULT_PERMISSIONS[UserRole.VENDEDOR]);
     }
     setErrors({});
+    setGeneratedEmail('');
   }, [user, isOpen]);
+
+  // Generar email automático basado en el nombre
+  useEffect(() => {
+    if (!isEditing && formData.name && tenant) {
+      // Generar email: primer palabra del nombre sin espacios @ nombre de la tienda
+      const firstWord = formData.name.split(' ')[0] || formData.name;
+      const nameSlug = firstWord.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remover acentos
+        .replace(/\s+/g, '') // Remover espacios
+        .replace(/[^a-z0-9]/g, ''); // Remover caracteres especiales
+      
+      // Usar el subdominio del tenant para el email
+      const email = `${nameSlug}@${tenant.subdomain}.com`;
+      setGeneratedEmail(email);
+      setFormData(prev => ({ ...prev, email }));
+    }
+  }, [formData.name, tenant, isEditing]);
 
   useEffect(() => {
     // Actualizar permisos cuando cambie el rol (solo si no es personalizado)
@@ -171,6 +182,25 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
       setSelectedPermissions(DEFAULT_PERMISSIONS[formData.role] || []);
     }
   }, [formData.role]);
+
+  // Manejar ESC key para cerrar modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -208,9 +238,6 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
         const updateData: UpdateUserDto = {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone || undefined,
-          address: formData.address || undefined,
-          employeeCode: formData.employeeCode || undefined,
           role: formData.role,
           active: formData.active
         };
@@ -229,9 +256,6 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          phone: formData.phone || undefined,
-          address: formData.address || undefined,
-          employeeCode: formData.employeeCode || undefined,
           role: formData.role
         };
 
@@ -246,10 +270,46 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
       onClose();
     } catch (error: any) {
       console.error('Error saving user:', error);
+      
+      // Manejar errores de validación del backend
       if (error.response?.data?.message) {
-        setErrors({ submit: error.response.data.message });
+        // Si el mensaje contiene errores de validación específicos
+        const message = error.response.data.message;
+        
+        // Verificar si es un array de errores de validación
+        if (Array.isArray(message)) {
+          const errorMessages = message.map((err: any) => {
+            // Traducir mensajes comunes de validación
+            if (typeof err === 'string') {
+              if (err.includes('should not exist')) {
+                // Ignorar errores de campos que no deberían existir
+                return null;
+              }
+              return err;
+            }
+            return err.message || err;
+          }).filter(Boolean).join(', ');
+          
+          setErrors({ submit: errorMessages || 'Error al guardar el usuario' });
+        } else if (typeof message === 'string') {
+          // Traducir mensajes de error comunes
+          let translatedMessage = message;
+          
+          if (message.includes('should not exist')) {
+            // Ignorar este tipo de errores o traducirlos
+            translatedMessage = 'Error en los datos del formulario';
+          } else if (message.includes('already exists')) {
+            translatedMessage = 'El email ya está en uso';
+          } else if (message.includes('Invalid')) {
+            translatedMessage = 'Datos inválidos';
+          }
+          
+          setErrors({ submit: translatedMessage });
+        } else {
+          setErrors({ submit: 'Error al guardar el usuario' });
+        }
       } else {
-        setErrors({ submit: 'Error al guardar el usuario' });
+        setErrors({ submit: 'Error al guardar el usuario. Por favor, intenta de nuevo.' });
       }
     } finally {
       setLoading(false);
@@ -262,11 +322,19 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
     { value: UserRole.CUSTOM, label: 'Personalizado' }
   ];
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
+      
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div 
+          className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
               {isEditing ? 'Editar Usuario' : 'Crear Usuario'}
@@ -279,27 +347,37 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
               <div className="space-y-4">
                 <h3 className="font-medium text-gray-900">Información básica</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Nombre *</Label>
+                    <Label htmlFor="name">Nombre completo *</Label>
                     <Input
                       id="name"
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Juan Pérez"
                       className={errors.name ? 'border-red-500' : ''}
                     />
-                    {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name}</p>}
+                    {errors.name && (
+                      <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+                    )}
                   </div>
 
                   <div>
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">Email {!isEditing && '(generado automáticamente)'}</Label>
+                    {!isEditing && generatedEmail && (
+                      <p className="text-sm text-gray-500 mb-2">
+                        Se generará el email: <span className="font-medium text-blue-600">{generatedEmail}</span>
+                      </p>
+                    )}
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       className={errors.email ? 'border-red-500' : ''}
+                      disabled={!isEditing}
+                      placeholder={!isEditing ? "Se generará automáticamente" : ""}
                     />
                     {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
                   </div>
@@ -314,6 +392,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       className={errors.password ? 'border-red-500' : ''}
+                      placeholder={isEditing ? "Dejar vacío para mantener la actual" : "Mínimo 6 caracteres"}
                     />
                     <button
                       type="button"
@@ -324,38 +403,6 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
                     </button>
                     {errors.password && <p className="text-sm text-red-600 mt-1">{errors.password}</p>}
                   </div>
-
-                  <div>
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="address">Dirección</Label>
-                    <Input
-                      id="address"
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="employeeCode">Código de empleado</Label>
-                    <Input
-                      id="employeeCode"
-                      type="text"
-                      value={formData.employeeCode}
-                      onChange={(e) => setFormData(prev => ({ ...prev, employeeCode: e.target.value }))}
-                    />
-                  </div>
                 </div>
               </div>
 
@@ -365,16 +412,18 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
                 
                 <div>
                   <Label htmlFor="role">Rol</Label>
-                  <Select
+                  <select
+                    id="role"
                     value={formData.role}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as UserRole }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as UserRole }))}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {roleOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
-                  </Select>
+                  </select>
                 </div>
 
                 {formData.role === UserRole.CUSTOM && (
@@ -430,7 +479,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, user, onSave }) 
           </div>
         </div>
       </div>
-    </Dialog>
+    </>
   );
 };
 
@@ -511,12 +560,29 @@ const UsersPage: React.FC = () => {
 
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.employeeCode?.toLowerCase().includes(searchTerm.toLowerCase())
+    u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const canModifyUser = (targetUser: TenantUser) => {
-    return user && targetUser._id !== user.id;
+    if (!user) return false;
+
+    // No puedes modificarte a ti mismo
+    if (targetUser._id === user.id) return false;
+
+    // Si el target es admin principal (sin createdBy)
+    const isTargetOwner = !targetUser.createdBy && targetUser.role === UserRole.ADMIN;
+
+    if (isTargetOwner) {
+      // Solo el admin principal puede modificar a otro admin principal
+      // Para verificar si el usuario actual es admin principal, necesitamos buscar
+      // su información completa en la lista de usuarios
+      const currentUserInList = users.find(u => u._id === user.id);
+      const isCurrentUserOwner = currentUserInList && !currentUserInList.createdBy && currentUserInList.role === UserRole.ADMIN;
+
+      return isCurrentUserOwner;
+    }
+
+    return true;
   };
 
   const formatLastLogin = (lastLogin?: string) => {
@@ -608,7 +674,7 @@ const UsersPage: React.FC = () => {
                 <Input
                   id="search"
                   type="text"
-                  placeholder="Buscar por nombre, email o código de empleado..."
+                  placeholder="Buscar por nombre o email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="mt-1"
@@ -628,7 +694,6 @@ const UsersPage: React.FC = () => {
                   <TableHead>Rol</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Última conexión</TableHead>
-                  <TableHead>Código empleado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -643,9 +708,6 @@ const UsersPage: React.FC = () => {
                         <div>
                           <p className="font-medium text-gray-900">{user.name}</p>
                           <p className="text-sm text-gray-500">{user.email}</p>
-                          {user.phone && (
-                            <p className="text-xs text-gray-400">{user.phone}</p>
-                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -660,11 +722,6 @@ const UsersPage: React.FC = () => {
                         <ClockIcon className="w-4 h-4" />
                         <span>{formatLastLogin(user.lastLogin)}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-600">
-                        {user.employeeCode || '-'}
-                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end space-x-2">
@@ -719,10 +776,16 @@ const UsersPage: React.FC = () => {
 
       {/* Dialog de confirmación de eliminación */}
       {showDeleteDialog && deleteUser && (
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="fixed inset-0 bg-black/50" onClick={() => setShowDeleteDialog(false)} />
-            <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md">
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowDeleteDialog(false)} />
+          
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div 
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -757,7 +820,7 @@ const UsersPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </Dialog>
+        </>
       )}
     </div>
   );

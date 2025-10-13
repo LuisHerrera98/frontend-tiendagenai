@@ -48,33 +48,44 @@ export function CategoryList() {
       <TableHeader>
         <TableRow>
           <TableHead>Nombre</TableHead>
+          <TableHead>Categoría Padre</TableHead>
+          <TableHead>Productos</TableHead>
           <TableHead>Acciones</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {categories.map((category) => (
-          <TableRow key={category._id}>
-            <TableCell className="font-medium">{category.name}</TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setEditingCategory(category)}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setDeletingCategory(category)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+        {categories.map((category) => {
+          const parentCategory = categories.find(c => c._id === category.parent_id)
+          return (
+            <TableRow key={category._id}>
+              <TableCell className="font-medium">{category.name}</TableCell>
+              <TableCell className="text-sm text-gray-600">
+                {parentCategory ? parentCategory.name : '-'}
+              </TableCell>
+              <TableCell className="text-sm text-gray-600">
+                {category.productsCount || 0}
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingCategory(category)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeletingCategory(category)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          )
+        })}
       </TableBody>
     </Table>
 

@@ -34,6 +34,14 @@ import {
 import { useAuth } from '@/contexts/auth-context'
 import { Permission } from '@/types/permissions'
 
+// Helper function para obtener la URL de la imagen correctamente
+const getImageUrl = (image: any): string => {
+  if (!image) return '';
+  if (typeof image === 'string') return image;
+  if (image.url) return image.url;
+  return '';
+}
+
 function LoadingSkeleton({ className = "" }) {
   return (
     <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
@@ -214,7 +222,7 @@ function ExchangeDialog({ sale, open, setOpen }: { sale: Sale | null, open: bool
               <div className="flex items-center space-x-3">
                 {sale.images && sale.images.length > 0 && (
                   <img 
-                    src={sale.images[0].url} 
+                    src={getImageUrl(sale.images[0])} 
                     alt={sale.product_name}
                     className="w-12 h-12 object-cover rounded-lg"
                   />
@@ -797,7 +805,7 @@ function MassiveExchangeDialog({ transaction, open, setOpen }: {
                     />
                     {sale.images && sale.images.length > 0 && (
                       <img 
-                        src={sale.images[0].url} 
+                        src={getImageUrl(sale.images[0])} 
                         alt={sale.product_name}
                         className="w-10 h-10 object-cover rounded"
                       />
@@ -1083,6 +1091,7 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
   const [paymentDropdownOpen, setPaymentDropdownOpen] = useState(false)
   const [appliedCredits, setAppliedCredits] = useState(0)
   const [clientDocument, setClientDocument] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const queryClient = useQueryClient()
 
   // Obtener categorías
@@ -1091,15 +1100,15 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
     queryFn: () => import('@/lib/categories').then(module => module.categoryService.getAll()),
   })
 
-  // Obtener productos filtrados por categoría
+  // Obtener productos - solo si hay categoría seleccionada o término de búsqueda
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['products-for-sale', selectedCategory],
     queryFn: () => productService.getProducts({ 
-      categoryId: selectedCategory,
+      categoryId: selectedCategory || undefined,
       limit: 1000, 
       showAll: false 
     }),
-    enabled: !!selectedCategory,
+    enabled: !!selectedCategory || !!searchTerm, // Solo ejecutar si hay categoría o búsqueda
     staleTime: 5 * 60 * 1000, // 5 minutos
   })
 
@@ -1111,12 +1120,27 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
     })
   }, [productsData])
 
+  // Filtrar productos por nombre/código si hay término de búsqueda
+  const filteredProducts = useMemo(() => {
+    let filtered = products
+    
+    // Aplicar filtro de búsqueda por nombre/código si hay término
+    if (searchTerm) {
+      filtered = filtered.filter((product: any) => 
+        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.code?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+    
+    return filtered
+  }, [products, searchTerm])
+
   // Memoizar talles disponibles
   const availableSizes = useMemo(() => {
     if (selectedProduct && products.length > 0) {
-      const product = products.find(p => p._id === selectedProduct)
+      const product = products.find((p: any) => p._id === selectedProduct)
       if (product) {
-        return product.stock?.filter(s => s.quantity > 0) || []
+        return product.stock?.filter((s: any) => s.quantity > 0) || []
       }
     }
     return []
@@ -1193,9 +1217,12 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
     }
 
     setCart(prev => [...prev, cartItem])
+    // Limpiar todos los campos para nueva búsqueda
     setSelectedProduct('')
     setSelectedSize('')
     setQuantity(1)
+    setSelectedCategory('')
+    setSearchTerm('')
   }
 
   const removeFromCart = (index: number) => {
@@ -1286,73 +1313,134 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Agregar Producto</h3>
             
-            <div className="space-y-2">
-              <Label>Categoría</Label>
-              <div className="relative category-dropdown">
-                <button
-                  type="button"
-                  onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
-                    {selectedCategory 
-                      ? categories?.find(cat => cat._id === selectedCategory)?.name || 'Seleccionar categoría...'
-                      : 'Seleccionar categoría...'
-                    }
-                  </span>
-                  <svg 
-                    className={`h-4 w-4 transition-transform ${categoryDropdownOpen ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
+            {/* Filtros de búsqueda */}
+            <div className="space-y-3">
+              {/* Selector de categoría */}
+              <div className="space-y-2">
+                <Label>Categoría (opcional)</Label>
+                <div className="relative category-dropdown">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                    <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
+                      {selectedCategory 
+                        ? categories?.find(cat => cat._id === selectedCategory)?.name || 'Todas las categorías'
+                        : 'Todas las categorías'
+                      }
+                    </span>
+                    <svg 
+                      className={`h-4 w-4 transition-transform ${categoryDropdownOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
 
                 {categoryDropdownOpen && (
                   <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
                     {!categories || categories.length === 0 ? (
                       <div className="p-3 text-center text-gray-500">Cargando categorías...</div>
                     ) : (
-                      categories.map((category) => (
+                      <>
+                        {/* Opción para todas las categorías */}
                         <button
-                          key={category._id}
                           type="button"
                           onClick={() => {
-                            setSelectedCategory(category._id)
+                            setSelectedCategory('')
                             setCategoryDropdownOpen(false)
                             setSelectedProduct('')
                             setSelectedSize('')
                           }}
                           className={`w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors ${
-                            selectedCategory === category._id ? 'bg-green-50 text-green-700' : 'text-gray-900'
+                            !selectedCategory ? 'bg-green-50 text-green-700' : 'text-gray-900'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span>{category.name}</span>
-                            {selectedCategory === category._id && (
+                            <span>Todas las categorías</span>
+                            {!selectedCategory && (
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             )}
                           </div>
                         </button>
-                      ))
+                        <div className="border-t border-gray-100"></div>
+                        {/* Lista de categorías */}
+                        {categories.map((category) => (
+                          <button
+                            key={category._id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory(category._id)
+                              setCategoryDropdownOpen(false)
+                              setSelectedProduct('')
+                              setSelectedSize('')
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors ${
+                              selectedCategory === category._id ? 'bg-green-50 text-green-700' : 'text-gray-900'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>{category.name}</span>
+                              {selectedCategory === category._id && (
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </>
                     )}
                   </div>
                 )}
+                </div>
+              </div>
+
+              {/* Campo de búsqueda por nombre */}
+              <div className="space-y-2">
+                <Label>Buscar por nombre o código (opcional)</Label>
+                <div className="relative">
+                  <svg
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <Input
+                    type="text"
+                    placeholder="Ej: Zapatilla, ADI123..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
             </div>
 
-            {selectedCategory && (
+            {/* Lista de productos - mostrar solo si hay categoría o búsqueda */}
+            {(selectedCategory || searchTerm) && (filteredProducts.length > 0 || productsLoading) ? (
               <div className="space-y-2">
-                <Label>Producto</Label>
+                <Label>
+                  Productos encontrados 
+                  {filteredProducts.length > 0 && ` (${filteredProducts.length})`}
+                </Label>
                 {productsLoading ? (
                   <div className="p-3 text-center text-gray-500">Cargando productos...</div>
-                ) : products.length === 0 ? (
-                  <div className="p-3 text-center text-gray-500">No hay productos con stock</div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="p-3 text-center text-gray-500">
+                    {searchTerm ? 'No se encontraron productos con ese criterio' : 'No hay productos con stock en esta categoría'}
+                  </div>
                 ) : (
-                  <div className="max-h-48 overflow-y-auto border rounded-lg">
-                    {products.map((product) => (
+                  <div className="max-h-64 overflow-y-auto border rounded-lg">
+                    {filteredProducts.map((product) => (
                       <div
                         key={product._id}
                         onClick={() => {
@@ -1372,7 +1460,12 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
                         )}
                         <div className="flex-1">
                           <p className="font-medium text-sm">{product.name}</p>
-                          <p className="text-sm text-green-600 font-medium">${product.price}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-green-600 font-medium">${product.price}</p>
+                            {product.code && (
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{product.code}</span>
+                            )}
+                          </div>
                         </div>
                         {selectedProduct === product._id && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -1381,6 +1474,26 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
                     ))}
                   </div>
                 )}
+              </div>
+            ) : (
+              /* Mensaje inicial */
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                <p className="mt-2 text-sm text-gray-600">
+                  Selecciona una categoría o busca por nombre para ver productos
+                </p>
               </div>
             )}
 
@@ -1498,17 +1611,23 @@ function RegisterSaleDialog({ open, setOpen }: { open: boolean, setOpen: (open: 
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {cart.map((item, index) => (
                   <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    {item.images && item.images.length > 0 && (
-                      <img 
-                        src={item.images[0].url} 
-                        alt={item.product_name}
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{item.product_name}</p>
+                    <div className="flex-shrink-0">
+                      {item.images && item.images.length > 0 ? (
+                        <img 
+                          src={getImageUrl(item.images[0])} 
+                          alt={item.product_name}
+                          className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <Package className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.product_name}</p>
                       <p className="text-xs text-gray-600">Talle: {item.size_name}</p>
-                      <p className="text-sm text-green-600 font-medium">${item.price}</p>
+                      <p className="text-sm text-green-600 font-medium">${item.price.toLocaleString('es-AR')}</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -1666,14 +1785,18 @@ export default function VentasPage() {
   const { hasPermission } = useAuth()
   
   // Check permissions
-  const canViewStats = hasPermission(Permission.SALES_STATS)
+  const canViewStats = hasPermission(Permission.SALES_VIEW_STATS)
   const canCreateSales = hasPermission(Permission.SALES_CREATE)
   const canEditSales = hasPermission(Permission.SALES_EDIT)
 
   // Configurar filtro por defecto al día actual
   const getTodayDate = () => {
+    // Obtener la fecha actual en la zona horaria local (Argentina)
     const today = new Date()
-    return today.toISOString().split('T')[0]
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   const [dateFilter, setDateFilter] = useState({ startDate: '', endDate: '' })
@@ -1772,6 +1895,7 @@ export default function VentasPage() {
     setSelectedImage({ url: imageUrl, alt: altText })
     setImageModalOpen(true)
   }
+
 
   return (
     <div className="space-y-6">
@@ -2068,10 +2192,10 @@ export default function VentasPage() {
                                 <div className="flex-shrink-0 w-10 h-10">
                                   {sale.images && sale.images.length > 0 ? (
                                     <img 
-                                      src={sale.images[0].url} 
+                                      src={getImageUrl(sale.images[0])} 
                                       alt={sale.product_name}
                                       className="w-full h-full object-cover rounded-md cursor-pointer"
-                                      onClick={() => handleOpenImage(sale.images[0].url, sale.product_name)}
+                                      onClick={() => handleOpenImage(getImageUrl(sale.images[0]), sale.product_name)}
                                     />
                                   ) : (
                                     <div className="w-full h-full bg-gray-100 rounded-md flex items-center justify-center">
@@ -2224,10 +2348,10 @@ export default function VentasPage() {
                             {sale.images && sale.images.length > 0 ? (
                               <div 
                                 className="relative w-full h-full cursor-pointer group"
-                                onClick={() => handleOpenImage(sale.images[0].url, sale.product_name)}
+                                onClick={() => handleOpenImage(getImageUrl(sale.images[0]), sale.product_name)}
                               >
                                 <img 
-                                  src={sale.images[0].url} 
+                                  src={getImageUrl(sale.images[0])} 
                                   alt={sale.product_name}
                                   className="w-full h-full object-cover rounded-md transition-opacity group-hover:opacity-80"
                                 />
@@ -2251,10 +2375,10 @@ export default function VentasPage() {
                               {sale.images && sale.images.length > 0 ? (
                                 <div 
                                   className="relative w-full h-full cursor-pointer group"
-                                  onClick={() => handleOpenImage(sale.images[0].url, sale.product_name)}
+                                  onClick={() => handleOpenImage(getImageUrl(sale.images[0]), sale.product_name)}
                                 >
                                   <img 
-                                    src={sale.images[0].url} 
+                                    src={getImageUrl(sale.images[0])} 
                                     alt={sale.product_name}
                                     className="w-full h-full object-cover rounded-md border border-gray-300"
                                   />
@@ -2280,13 +2404,13 @@ export default function VentasPage() {
                               {sale.exchange_type === 'nueva_por_cambio' && sale.original_product_info && sale.original_product_info.length > 0 && (
                                 <div 
                                   className="relative w-full h-full cursor-pointer group"
-                                  onClick={() => sale.original_product_info?.[0]?.images?.[0]?.url && 
-                                    handleOpenImage(sale.original_product_info[0].images[0].url, sale.original_product_info[0].name)}
+                                  onClick={() => sale.original_product_info?.[0]?.images?.[0] && 
+                                    handleOpenImage(getImageUrl(sale.original_product_info[0].images[0]), sale.original_product_info[0].name)}
                                 >
                                   {sale.original_product_info[0].images && sale.original_product_info[0].images.length > 0 ? (
                                     <>
                                       <img 
-                                        src={sale.original_product_info[0].images[0].url} 
+                                        src={getImageUrl(sale.original_product_info[0].images[0])} 
                                         alt={sale.original_product_info[0].name}
                                         className="w-full h-full object-cover rounded-md border border-gray-300"
                                       />
@@ -2306,13 +2430,13 @@ export default function VentasPage() {
                               {sale.exchange_type === 'anulada_por_cambio' && sale.new_product_info && sale.new_product_info.length > 0 && (
                                 <div 
                                   className="relative w-full h-full cursor-pointer group"
-                                  onClick={() => sale.new_product_info?.[0]?.images?.[0]?.url && 
-                                    handleOpenImage(sale.new_product_info[0].images[0].url, sale.new_product_info[0].name)}
+                                  onClick={() => sale.new_product_info?.[0]?.images?.[0] && 
+                                    handleOpenImage(getImageUrl(sale.new_product_info[0].images[0]), sale.new_product_info[0].name)}
                                 >
                                   {sale.new_product_info[0].images && sale.new_product_info[0].images.length > 0 ? (
                                     <>
                                       <img 
-                                        src={sale.new_product_info[0].images[0].url} 
+                                        src={getImageUrl(sale.new_product_info[0].images[0])} 
                                         alt={sale.new_product_info[0].name}
                                         className="w-full h-full object-cover rounded-md border border-gray-300"
                                       />
@@ -2440,10 +2564,10 @@ export default function VentasPage() {
                         {sale.images && sale.images.length > 0 ? (
                           <div 
                             className="relative w-full h-full cursor-pointer group"
-                            onClick={() => handleOpenImage(sale.images[0].url, sale.product_name)}
+                            onClick={() => handleOpenImage(getImageUrl(sale.images[0]), sale.product_name)}
                           >
                             <img 
-                              src={sale.images[0].url} 
+                              src={getImageUrl(sale.images[0])} 
                               alt={sale.product_name}
                               className="w-full h-full object-cover rounded-md transition-opacity group-hover:opacity-80"
                             />
@@ -2468,10 +2592,10 @@ export default function VentasPage() {
                             {sale.images && sale.images.length > 0 ? (
                               <div 
                                 className="relative w-full h-full cursor-pointer group"
-                                onClick={() => handleOpenImage(sale.images[0].url, sale.product_name)}
+                                onClick={() => handleOpenImage(getImageUrl(sale.images[0]), sale.product_name)}
                               >
                                 <img 
-                                  src={sale.images[0].url} 
+                                  src={getImageUrl(sale.images[0])} 
                                   alt={sale.product_name}
                                   className="w-full h-full object-cover rounded-md border border-gray-300"
                                 />
@@ -2497,13 +2621,13 @@ export default function VentasPage() {
                             {sale.exchange_type === 'nueva_por_cambio' && sale.original_product_info && sale.original_product_info.length > 0 && (
                               <div 
                                 className="relative w-full h-full cursor-pointer group"
-                                onClick={() => sale.original_product_info?.[0]?.images?.[0]?.url && 
-                                  handleOpenImage(sale.original_product_info[0].images[0].url, sale.original_product_info[0].name)}
+                                onClick={() => sale.original_product_info?.[0]?.images?.[0] && 
+                                  handleOpenImage(getImageUrl(sale.original_product_info[0].images[0]), sale.original_product_info[0].name)}
                               >
                                 {sale.original_product_info[0].images && sale.original_product_info[0].images.length > 0 ? (
                                   <>
                                     <img 
-                                      src={sale.original_product_info[0].images[0].url} 
+                                      src={getImageUrl(sale.original_product_info[0].images[0])} 
                                       alt={sale.original_product_info[0].name}
                                       className="w-full h-full object-cover rounded-md border border-gray-300"
                                     />
@@ -2523,13 +2647,13 @@ export default function VentasPage() {
                             {sale.exchange_type === 'anulada_por_cambio' && sale.new_product_info && sale.new_product_info.length > 0 && (
                               <div 
                                 className="relative w-full h-full cursor-pointer group"
-                                onClick={() => sale.new_product_info?.[0]?.images?.[0]?.url && 
-                                  handleOpenImage(sale.new_product_info[0].images[0].url, sale.new_product_info[0].name)}
+                                onClick={() => sale.new_product_info?.[0]?.images?.[0] && 
+                                  handleOpenImage(getImageUrl(sale.new_product_info[0].images[0]), sale.new_product_info[0].name)}
                               >
                                 {sale.new_product_info[0].images && sale.new_product_info[0].images.length > 0 ? (
                                   <>
                                     <img 
-                                      src={sale.new_product_info[0].images[0].url} 
+                                      src={getImageUrl(sale.new_product_info[0].images[0])} 
                                       alt={sale.new_product_info[0].name}
                                       className="w-full h-full object-cover rounded-md border border-gray-300"
                                     />
@@ -2739,7 +2863,7 @@ export default function VentasPage() {
           </DialogHeader>
           <div className="flex items-center justify-center">
             <img 
-              src={selectedImage.url} 
+              src={getImageUrl(selectedImage)} 
               alt={selectedImage.alt}
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />

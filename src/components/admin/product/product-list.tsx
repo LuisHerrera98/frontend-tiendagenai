@@ -41,7 +41,7 @@ export function ProductList() {
   const { hasPermission } = useAuth()
 
   // Check permissions
-  const canViewCosts = hasPermission(Permission.PRODUCTS_COSTS)
+  const canViewCosts = hasPermission(Permission.PRODUCTS_VIEW_COSTS)
   const canEditProducts = hasPermission(Permission.PRODUCTS_EDIT)
   const canDeleteProducts = hasPermission(Permission.PRODUCTS_DELETE)
   const canCreateProducts = hasPermission(Permission.PRODUCTS_CREATE)

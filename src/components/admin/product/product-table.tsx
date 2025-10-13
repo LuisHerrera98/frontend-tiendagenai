@@ -35,7 +35,7 @@ export function ProductTable({
   const { hasPermission } = useAuth()
   const canEdit = hasPermission(Permission.PRODUCTS_EDIT)
   const canDelete = hasPermission(Permission.PRODUCTS_DELETE)
-  const canViewCosts = hasPermission(Permission.PRODUCTS_COSTS)
+  const canViewCosts = hasPermission(Permission.PRODUCTS_VIEW_COSTS)
 
   const handleView = (product: Product) => {
     setSelectedProduct(product)

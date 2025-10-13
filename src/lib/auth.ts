@@ -55,17 +55,45 @@ class AuthService {
   }
 
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await axios.post(`${API_URL}/auth/login`, data);
-    const { access_token, user } = response.data;
+    // Determinar si es un login de tenant (formato: user@tenant)
+    const isTenantLogin = data.email && !data.email.includes('.com') && data.email.includes('@');
     
-    // Guardar token y usuario en localStorage
-    this.setToken(access_token);
-    this.setUser(user);
-    
-    // Configurar axios para futuras peticiones
-    this.setAuthHeader(access_token);
-    
-    return response.data;
+    let response;
+    if (isTenantLogin) {
+      // Login de tenant (vendedor, etc)
+      response = await axios.post(`${API_URL}/auth/tenant/login`, data);
+      const { accessToken, user, tenant } = response.data;
+      
+      // Guardar token y usuario en localStorage
+      this.setToken(accessToken);
+      this.setUser(user);
+      
+      // Guardar información del tenant
+      if (tenant) {
+        localStorage.setItem('tenant_subdomain', tenant.subdomain);
+      }
+      
+      // Configurar axios para futuras peticiones
+      this.setAuthHeader(accessToken);
+      
+      return {
+        access_token: accessToken,
+        user: user
+      };
+    } else {
+      // Login normal
+      response = await axios.post(`${API_URL}/auth/login`, data);
+      const { access_token, user } = response.data;
+      
+      // Guardar token y usuario en localStorage
+      this.setToken(access_token);
+      this.setUser(user);
+      
+      // Configurar axios para futuras peticiones
+      this.setAuthHeader(access_token);
+      
+      return response.data;
+    }
   }
 
   async verifyEmail(token: string) {

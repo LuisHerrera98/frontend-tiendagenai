@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { categoryService } from '@/lib/categories'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,7 @@ import {
 
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
+  parent_id: z.string().optional(),
 })
 
 type CategoryFormData = z.infer<typeof categorySchema>
@@ -41,15 +42,24 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoryService.getAll,
+  })
+
+  // Filtrar solo categorías padre para el selector
+  const parentCategories = categories?.filter(cat => !cat.parent_id) || []
+
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
       name: '',
+      parent_id: '',
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (name: string) => categoryService.create(name),
+    mutationFn: (data: CategoryFormData) => categoryService.create(data.name, data.parent_id || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       onOpenChange(false)
@@ -68,7 +78,7 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
   })
 
   const onSubmit = (data: CategoryFormData) => {
-    mutation.mutate(data.name)
+    mutation.mutate(data)
   }
 
   return (
@@ -92,6 +102,30 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
                     <FormLabel>Nombre de la Categoría</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Nombre de la categoría" autoComplete="off" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="parent_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoría Padre (Opcional)</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="">Sin categoría padre (Categoría principal)</option>
+                        {parentCategories.map((cat) => (
+                          <option key={cat._id} value={cat._id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Home, Menu, Store, LogOut } from 'lucide-react'
+import { Home, Menu, Store, LogOut, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { TenantSwitcher } from './tenant-switcher'
+import { useAuth } from '@/contexts/auth-context'
+import { UserRole } from '@/types/permissions'
 
 interface AdminHeaderProps {
   onMenuClick?: () => void
@@ -12,6 +14,21 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const [subdomain, setSubdomain] = useState<string>('')
+  const { user, role } = useAuth()
+  
+  // Función para obtener el nombre del rol en español
+  const getRoleName = (role: UserRole | null) => {
+    switch (role) {
+      case UserRole.ADMIN:
+        return 'Administrador'
+      case UserRole.VENDEDOR:
+        return 'Vendedor'
+      case UserRole.CUSTOM:
+        return 'Personalizado'
+      default:
+        return ''
+    }
+  }
   
   useEffect(() => {
     // Función para actualizar el subdominio
@@ -80,6 +97,20 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Mostrar información del usuario */}
+          {user && (
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 rounded-lg">
+              <User className="w-4 h-4 text-gray-600" />
+              <div className="hidden sm:flex flex-col">
+                <span className="text-sm font-medium text-gray-900">{user.name}</span>
+                <span className="text-xs text-gray-500">{getRoleName(role)}</span>
+              </div>
+              <div className="sm:hidden">
+                <span className="text-sm font-medium text-gray-900">{user.name.split(' ')[0]}</span>
+              </div>
+            </div>
+          )}
+          
           {subdomain && (
             <a 
               href={getStoreUrl()} 

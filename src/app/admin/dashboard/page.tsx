@@ -83,8 +83,15 @@ function MetricCard({
   )
 }
 
+import { useAuth } from '@/contexts/auth-context'
+import { Permission } from '@/types/permissions'
+
 export default function AdminDashboard() {
+  const { hasPermission } = useAuth()
   const [currentTime, setCurrentTime] = useState('')
+  
+  // Check if user can view financial information
+  const canViewFinancials = hasPermission(Permission.PRODUCTS_VIEW_COSTS)
 
   // Update time on client side only
   useEffect(() => {
@@ -212,28 +219,32 @@ export default function AdminDashboard() {
           error={categoriesError?.message}
         />
         
-        <MetricCard
-          title="Inversión Total"
-          value={inversionData?.totalInversion ? `$${inversionData.totalInversion.toLocaleString('es-AR')}` : '$0'}
-          description="Valor del inventario (costo)"
-          icon={DollarSign}
-          isLoading={inversionLoading}
-          error={inversionError?.message}
-        />
+        {canViewFinancials && (
+          <MetricCard
+            title="Inversión Total"
+            value={inversionData?.totalInversion ? `$${inversionData.totalInversion.toLocaleString('es-AR')}` : '$0'}
+            description="Valor del inventario (costo)"
+            icon={DollarSign}
+            isLoading={inversionLoading}
+            error={inversionError?.message}
+          />
+        )}
       </div>
       
       {/* Secondary Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Valor Potencial Ventas"
-          value={`$${activePotentialSalesValue.toLocaleString('es-AR')}`}
-          description="Valor productos activos (vendibles)"
-          icon={ShoppingBag}
-          isLoading={productsLoading}
-          error={productsError?.message}
-          trend={activePotentialSalesValue < potentialSalesValue ? 'down' : null}
-          trendValue={activePotentialSalesValue < potentialSalesValue ? `$${(potentialSalesValue - activePotentialSalesValue).toLocaleString('es-AR')} inactivos` : null}
-        />
+        {canViewFinancials && (
+          <MetricCard
+            title="Valor Potencial Ventas"
+            value={`$${activePotentialSalesValue.toLocaleString('es-AR')}`}
+            description="Valor productos activos (vendibles)"
+            icon={ShoppingBag}
+            isLoading={productsLoading}
+            error={productsError?.message}
+            trend={activePotentialSalesValue < potentialSalesValue ? 'down' : null}
+            trendValue={activePotentialSalesValue < potentialSalesValue ? `$${(potentialSalesValue - activePotentialSalesValue).toLocaleString('es-AR')} inactivos` : null}
+          />
+        )}
         
         <MetricCard
           title="Stock Bajo"

@@ -242,6 +242,15 @@ Agregar en Settings → Secrets:
 - Stock por tallas
 - Filtros avanzados
 
+### Usuarios (`/admin/usuarios`) ✨ NUEVO
+- Gestión completa de usuarios del tenant
+- Creación con roles: ADMIN, VENDEDOR, CUSTOM
+- Asignación de permisos granulares
+- Estados activo/inactivo
+- Búsqueda por nombre, email o código empleado
+- Último login tracking
+- Reset de contraseña por admin
+
 ### Tallas (`/admin/tallas`)
 - Vista agrupada por categorías
 - Diseño de cajitas negras compactas
@@ -325,6 +334,33 @@ Agregar en Settings → Secrets:
 - Persistencia automática en localStorage
 - Métodos: addItem, removeItem, updateQuantity, clearCart
 - Cálculos: getTotal, getTotalWithDiscount, getItemsCount
+
+## 🔐 Sistema de Usuarios y Permisos (Enero 2025)
+
+### Arquitectura de Permisos
+- **Roles predefinidos**: ADMIN, VENDEDOR, CUSTOM
+- **Permisos granulares**: 62 permisos diferentes organizados por categorías
+- **Herencia de permisos**: Los roles tienen permisos por defecto configurables
+
+### Flujo de Autenticación Multi-Tenant
+1. **Login formato**: `username@tenant.com` (ej: jose@mitienda.com)
+2. **Primera vez**: Usuario recibe email con token para configurar contraseña
+3. **Recuperación**: Código de 6 dígitos enviado por email
+4. **Gestión**: Admins pueden crear, editar, desactivar usuarios
+
+### Componentes de Usuario
+- **`/lib/users.ts`**: Servicio de gestión de usuarios
+- **`/types/permissions.ts`**: Enums y tipos de permisos
+- **`/app/admin/usuarios/page.tsx`**: UI completa de gestión
+- **PermissionAssignment**: Componente para asignar permisos
+- **UserModal**: Modal de creación/edición de usuarios
+
+### Restricciones por Rol
+- **ADMIN**: Acceso total al sistema
+- **VENDEDOR**: 
+  - ✅ Puede: Ver productos, registrar ventas, ver pedidos
+  - ❌ No puede: Ver costos, modificar stock, gestionar usuarios
+- **CUSTOM**: Permisos personalizados asignados manualmente
 
 ## 🆕 Funcionalidades Implementadas Recientemente
 
@@ -464,9 +500,19 @@ pm2 restart frontend-tiendagenai
 7. Multi-idioma
 8. Sistema de cupones y descuentos
 
-## 📝 Última Actualización: Diciembre 2024
+## 📝 Última Actualización: Enero 2025
 
-### Cambios Principales:
+### Cambios Principales Sistema de Usuarios:
+- ✅ **Sistema completo de usuarios y permisos implementado**
+- ✅ Login multi-tenant con formato user@tenant.com
+- ✅ Tres roles con permisos específicos (ADMIN, VENDEDOR, CUSTOM)
+- ✅ UI de gestión de usuarios en /admin/usuarios
+- ✅ Recuperación de contraseña con código de 6 dígitos
+- ✅ Primera vez login con configuración de contraseña
+- ✅ Asignación dinámica de permisos para roles personalizados
+- ✅ Botones de Ventas y Usuarios habilitados en sidebar
+
+### Sistema Anteriormente Implementado:
 - ✅ Sistema de upload directo a Cloudinary implementado
 - ✅ CSP configurado para permitir widget de Cloudinary
 - ✅ Tipos de datos actualizados (images como string[])
@@ -475,7 +521,8 @@ pm2 restart frontend-tiendagenai
 - ✅ Toggle de WhatsApp en configuración
 - ✅ Gestión de pedidos simplificada a 4 estados
 
-### Pendiente de Resolver:
-- ⚠️ Verificar que las imágenes se muestren correctamente en el listado de productos
-- ⚠️ Implementar borrado de imágenes desde backend cuando se elimine un producto
-- ⚠️ El upload preset de Cloudinary debe estar configurado como UNSIGNED
+### Consideraciones de Seguridad:
+- ⚠️ Los vendedores NO pueden ver costos de productos
+- ⚠️ Los vendedores NO pueden modificar stock
+- ⚠️ Solo administradores pueden gestionar usuarios
+- ⚠️ Permisos verificados tanto en frontend como backend

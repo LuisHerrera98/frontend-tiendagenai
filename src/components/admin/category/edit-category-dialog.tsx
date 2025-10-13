@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { categoryService } from '@/lib/categories'
 import { Category } from '@/types'
@@ -28,6 +28,7 @@ import {
 
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
+  parent_id: z.string().optional(),
 })
 
 type CategoryFormData = z.infer<typeof categorySchema>
@@ -43,23 +44,35 @@ export function EditCategoryDialog({ open, onOpenChange, category }: EditCategor
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoryService.getAll,
+  })
+
+  // Filtrar categorías padre (excluyendo la categoría actual para evitar recursión)
+  const parentCategories = categories?.filter(cat => !cat.parent_id && cat._id !== category?._id) || []
+
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
       name: category?.name || '',
+      parent_id: category?.parent_id || '',
     },
   })
 
   // Update form when category changes
   useEffect(() => {
     if (category) {
-      form.reset({ name: category.name })
+      form.reset({
+        name: category.name,
+        parent_id: category.parent_id || ''
+      })
     }
   }, [category, form])
 
   const mutation = useMutation({
-    mutationFn: (data: CategoryFormData) => 
-      categoryService.update(category!._id, data.name),
+    mutationFn: (data: CategoryFormData) =>
+      categoryService.update(category!._id, data.name, data.parent_id || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       onOpenChange(false)
@@ -104,6 +117,30 @@ export function EditCategoryDialog({ open, onOpenChange, category }: EditCategor
                     <FormLabel>Nombre de la Categoría</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Nombre de la categoría" autoComplete="off" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="parent_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoría Padre (Opcional)</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="">Sin categoría padre (Categoría principal)</option>
+                        {parentCategories.map((cat) => (
+                          <option key={cat._id} value={cat._id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
