@@ -31,10 +31,13 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
   const queryClient = useQueryClient()
   const { showToast, toastMessage, toastType, handleError, setShowToast } = useToastError()
 
-  const { data: categories } = useQuery({
+  const { data: allCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getAll,
   })
+
+  // Filtrar solo categorías padre (sin parent_id)
+  const categories = allCategories?.filter((cat: any) => !cat.parent_id) || []
 
   const mutation = useMutation({
     mutationFn: ({ name, category_id }: { name: string; category_id: string }) => 
@@ -87,8 +90,11 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900">Crear Nuevo Talle</DialogTitle>
-          <DialogDescription className="text-gray-600">
-            Ingresa el nombre del nuevo talle y selecciona una categoría.
+          <DialogDescription className="text-gray-600 space-y-2">
+            <p>Ingresa el nombre del nuevo talle y selecciona una categoría padre.</p>
+            <p className="text-blue-600 text-sm font-medium">
+              💡 Las subcategorías heredan automáticamente las tallas de su categoría padre.
+            </p>
           </DialogDescription>
         </DialogHeader>
 

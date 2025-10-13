@@ -35,10 +35,13 @@ export function CreateMultipleSizesDialog({ open, onOpenChange }: CreateMultiple
   const queryClient = useQueryClient()
   const { showToast, toastMessage, toastType, handleError, setShowToast } = useToastError()
 
-  const { data: categories } = useQuery({
+  const { data: allCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getAll,
   })
+
+  // Filtrar solo categorías padre (sin parent_id)
+  const categories = allCategories?.filter((cat: any) => !cat.parent_id) || []
 
   const mutation = useMutation({
     mutationFn: ({ categoryId, sizes }: { categoryId: string; sizes: { name: string }[] }) => 
@@ -124,8 +127,11 @@ export function CreateMultipleSizesDialog({ open, onOpenChange }: CreateMultiple
             <DialogTitle className="text-xl font-semibold text-gray-900">
               Crear Múltiples Tallas
             </DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Selecciona una categoría y agrega todas las tallas que necesites.
+            <DialogDescription className="text-gray-600 space-y-2">
+              <p>Selecciona una categoría padre y agrega todas las tallas que necesites.</p>
+              <p className="text-blue-600 text-sm font-medium">
+                💡 Las subcategorías heredan automáticamente las tallas de su categoría padre.
+              </p>
             </DialogDescription>
           </DialogHeader>
 

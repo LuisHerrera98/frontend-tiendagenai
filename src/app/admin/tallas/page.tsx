@@ -63,7 +63,12 @@ export default function TallasPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Tallas</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Tallas</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Solo se crean tallas en categorías padre. Las subcategorías heredan las tallas automáticamente.
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button 
             onClick={() => setCreateOpen(true)} 
