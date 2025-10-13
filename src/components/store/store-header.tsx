@@ -42,17 +42,18 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
   const isSimpleStore = storeData.settings?.simpleStoreEnabled === true
 
   useEffect(() => {
-    if (isSimpleStore) {
-      fetchCategories()
-    }
-  }, [storeData.subdomain, isSimpleStore])
+    fetchCategories()
+  }, [storeData.subdomain])
 
   const fetchCategories = async () => {
     try {
+      console.log('Fetching categories for subdomain:', storeData.subdomain)
       const response = await api.get(`/public/categories-tree/${storeData.subdomain}`)
+      console.log('Categories response:', response.data)
       setCategories(response.data || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
+      console.error('Error details:', error.response?.data)
     }
   }
 
@@ -163,17 +164,17 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
                 >
                   Inicio
                 </Link>
-                <Link 
-                  href={`/store/${storeData.subdomain}/tracking`} 
+                <Link
+                  href={`/store/${storeData.subdomain}/tracking`}
                   className="text-gray-700 hover:bg-gray-50 rounded-lg px-3 py-3 flex items-center gap-2 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Package className="w-4 h-4" />
                   Mi Pedido
                 </Link>
-                
-                {/* Categorías - Solo mostrar si la tienda simple está activa */}
-                {isSimpleStore && categories.length > 0 && (
+
+                {/* Categorías */}
+                {categories.length > 0 && (
                   <div className="border-t mt-2 pt-2">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2">
                       Categorías
