@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, Menu, X, Package, ChevronRight } from 'lucide-react'
+import { ShoppingCart, Menu, X, Package, ChevronRight, ChevronDown } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
@@ -25,6 +25,7 @@ interface Category {
   id: string
   _id?: string
   name: string
+  subcategories?: Category[]
 }
 
 interface StoreHeaderProps {
@@ -34,6 +35,7 @@ interface StoreHeaderProps {
 export function StoreHeader({ storeData }: StoreHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const { getItemsCount } = useCart()
   const router = useRouter()
   const itemsCount = getItemsCount()
@@ -47,11 +49,23 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get(`/public/categories/${storeData.subdomain}`)
+      const response = await api.get(`/public/categories-tree/${storeData.subdomain}`)
       setCategories(response.data || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
+  }
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId)
+      } else {
+        newSet.add(categoryId)
+      }
+      return newSet
+    })
   }
 
   return (
@@ -165,17 +179,71 @@ export function StoreHeader({ storeData }: StoreHeaderProps) {
                       Categorías
                     </p>
                     <div className="flex flex-col space-y-1">
-                      {categories.map((category) => (
-                        <Link
-                          key={category.id || category._id}
-                          href={`/store/${storeData.subdomain}/productos?category=${category.id || category._id}&categoryName=${encodeURIComponent(category.name)}`}
-                          className="text-gray-700 hover:bg-gray-50 rounded-lg px-3 py-3 flex items-center justify-between transition-colors"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <span>{category.name}</span>
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
-                        </Link>
-                      ))}
+                      {categories.map((category) => {
+                        const categoryId = category.id || category._id || ''
+                        const hasSubcategories = category.subcategories && category.subcategories.length > 0
+                        const isExpanded = expandedCategories.has(categoryId)
+
+                        return (
+                          <div key={categoryId}>
+                            {/* Categoría padre */}
+                            <div className="flex items-center">
+                              {hasSubcategories ? (
+                                <button
+                                  onClick={() => toggleCategory(categoryId)}
+                                  className="flex-1 text-gray-700 hover:bg-gray-50 rounded-lg px-3 py-3 flex items-center justify-between transition-colors"
+                                >
+                                  <span className="font-medium">{category.name}</span>
+                                  <ChevronDown
+                                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                                      isExpanded ? 'rotate-180' : ''
+                                    }`}
+                                  />
+                                </button>
+                              ) : (
+                                <Link
+                                  href={`/store/${storeData.subdomain}/productos?category=${categoryId}&categoryName=${encodeURIComponent(category.name)}`}
+                                  className="flex-1 text-gray-700 hover:bg-gray-50 rounded-lg px-3 py-3 flex items-center justify-between transition-colors"
+                                  onClick={() => setMobileMenuOpen(false)}
+                                >
+                                  <span>{category.name}</span>
+                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                </Link>
+                              )}
+                            </div>
+
+                            {/* Subcategorías expandibles */}
+                            {hasSubcategories && isExpanded && (
+                              <div className="ml-4 mt-1 space-y-1 pb-2">
+                                {/* Opción "Ver todo" */}
+                                <Link
+                                  href={`/store/${storeData.subdomain}/productos?category=${categoryId}&categoryName=${encodeURIComponent(category.name)}`}
+                                  className="text-gray-600 hover:bg-blue-50 rounded-lg px-3 py-2 flex items-center gap-2 transition-colors text-sm"
+                                  onClick={() => setMobileMenuOpen(false)}
+                                >
+                                  <span className="font-medium text-blue-600">Ver todo</span>
+                                </Link>
+
+                                {/* Lista de subcategorías */}
+                                {category.subcategories?.map((subcat) => {
+                                  const subcatId = subcat.id || subcat._id || ''
+                                  return (
+                                    <Link
+                                      key={subcatId}
+                                      href={`/store/${storeData.subdomain}/productos?category=${subcatId}&categoryName=${encodeURIComponent(subcat.name)}`}
+                                      className="text-gray-600 hover:bg-gray-50 rounded-lg px-3 py-2 flex items-center justify-between transition-colors text-sm border-l-2 border-gray-200 ml-2"
+                                      onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                      <span>{subcat.name}</span>
+                                      <ChevronRight className="w-3 h-3 text-gray-400" />
+                                    </Link>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
