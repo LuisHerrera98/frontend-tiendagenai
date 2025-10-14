@@ -314,6 +314,11 @@ Agregar en Settings → Secrets:
   - **CORREGIDO**: Enlaces ahora usan `/store/${subdomain}/` correctamente
 - **StoreFooter**: Información y redes sociales configurables (altura reducida)
 - **WhatsAppButton**: Botón flotante (solo visible si está habilitado en configuración)
+- **QuickBuyModal**: Modal de compra rápida con React Portal
+  - Renderizado directo en `document.body` con `createPortal`
+  - Overlay de pantalla completa con z-index 50
+  - Selector de tallas y cantidades
+  - Integración con CartContext y notificaciones
 
 ## 🔧 Componentes Importantes
 
@@ -364,6 +369,72 @@ Agregar en Settings → Secrets:
 
 ## 🆕 Funcionalidades Implementadas Recientemente
 
+### Sistema de Categorías Jerárquicas con Herencia de Tallas (Enero 2025)
+
+**Arquitectura:**
+- Categorías padre con subcategorías (usando `parent_id`)
+- Tallas solo se crean en categorías padre
+- Subcategorías heredan automáticamente las tallas de su padre
+- Menú jerárquico en tienda pública con expandir/colapsar
+
+**Implementación Frontend:**
+
+**Admin - Gestión de Tallas (`/admin/tallas`):**
+- Solo muestra categorías padre en selectores
+- Subtítulo explicativo: "Solo se crean tallas en categorías padre. Las subcategorías heredan las tallas automáticamente."
+- Filtro de categorías padre en `create-size-dialog.tsx` y `create-multiple-sizes-dialog.tsx`
+- Mensajes informativos en modales con fondo azul
+
+**Tienda Pública - Menú Jerárquico (`store-header.tsx`):**
+```typescript
+// Estructura de categoría con subcategorías
+interface Category {
+  id: string
+  name: string
+  subcategories?: Category[]
+}
+
+// Expandir/colapsar con estado
+const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+
+// Renderizado jerárquico
+{hasSubcategories ? (
+  <button onClick={() => toggleCategory(categoryId)}>
+    <span>{category.name}</span>
+    <ChevronDown className={isExpanded ? 'rotate-180' : ''} />
+  </button>
+) : (
+  <Link href={`/productos?category=${categoryId}`}>
+    {category.name}
+  </Link>
+)}
+
+// Subcategorías con "Ver todo"
+{isExpanded && (
+  <div className="ml-4">
+    <Link href={`/productos?category=${categoryId}`}>
+      <span className="text-blue-600">Ver todo</span>
+    </Link>
+    {category.subcategories.map(subcat => (
+      <Link href={`/productos?category=${subcat.id}`}>
+        {subcat.name}
+      </Link>
+    ))}
+  </div>
+)}
+```
+
+**Backend API Integration:**
+- `GET /public/categories-tree/:subdomain` - Árbol jerárquico completo
+- `GET /size/category/:categoryId` - Devuelve tallas del padre si es subcategoría
+- Filtros de productos incluyen subcategorías automáticamente
+
+**Beneficios:**
+- 🎯 Simplifica creación de tallas (una sola vez)
+- 🔄 Consistencia automática entre subcategorías
+- 💡 UX intuitiva: subcategorías = variaciones de estilo
+- 🔒 Backend valida y rechaza tallas en subcategorías (Error 400)
+
 ### Sistema de Upload de Imágenes
 1. **Upload directo a Cloudinary**:
    - Sin pasar por el backend
@@ -394,9 +465,27 @@ Agregar en Settings → Secrets:
 
 ## 🐛 Solución de Problemas Comunes
 
+### Modal de compra rápida aparece dentro del producto (Enero 2025) ✅ SOLUCIONADO
+- **PROBLEMA**: El modal "Agregar al carrito" se renderizaba dentro del ProductCard, viéndose pequeño y limitado por el contenedor padre
+- **CAUSA**: Modal renderizado en el árbol DOM del componente, heredando constraints de tamaño
+- **SOLUCIÓN**: Uso de React Portal (`createPortal`) para renderizar en `document.body`
+  ```typescript
+  import { createPortal } from 'react-dom'
+
+  // Renderizar modal fuera del árbol del componente
+  return createPortal(
+    <div className="fixed inset-0 z-50">
+      {/* Modal content */}
+    </div>,
+    document.body
+  )
+  ```
+- **ARCHIVO ACTUALIZADO**: `/src/components/store/quick-buy-modal.tsx`
+- **RESULTADO**: Modal ahora aparece como overlay de pantalla completa sobre todo el contenido
+
 ### Imágenes no se muestran en listado de productos (Enero 2025)
 - **PROBLEMA**: Backend devolvía objetos vacíos `{}` en lugar de URLs
-- **SOLUCIÓN**: 
+- **SOLUCIÓN**:
   1. Backend actualizado para manejar tanto strings como objetos con url/publicId
   2. Frontend cambiado de `Image` de Next.js a `img` estándar para URLs de Cloudinary
   3. Backend guarda objetos `{url, publicId}` pero devuelve strings al frontend
@@ -502,6 +591,12 @@ pm2 restart frontend-tiendagenai
 
 ## 📝 Última Actualización: Enero 2025
 
+### Última Corrección (Modal QuickBuy):
+- ✅ **Modal de compra rápida ahora usa React Portal**
+- ✅ Renderizado directo en `document.body` para overlay de pantalla completa
+- ✅ Fix de UX crítico: modal ya no aparece limitado dentro del producto card
+- ✅ Estado `mounted` agregado para compatibilidad con SSR de Next.js
+
 ### Cambios Principales Sistema de Usuarios:
 - ✅ **Sistema completo de usuarios y permisos implementado**
 - ✅ Login multi-tenant con formato user@tenant.com
@@ -520,6 +615,7 @@ pm2 restart frontend-tiendagenai
 - ✅ Sistema de tracking de pedidos funcional
 - ✅ Toggle de WhatsApp en configuración
 - ✅ Gestión de pedidos simplificada a 4 estados
+- ✅ Sistema de categorías jerárquicas con herencia de tallas
 
 ### Consideraciones de Seguridad:
 - ⚠️ Los vendedores NO pueden ver costos de productos

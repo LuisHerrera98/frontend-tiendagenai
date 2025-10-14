@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Plus, Minus, ShoppingCart } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { api } from '@/lib/api'
@@ -49,8 +50,14 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
     sizeName?: string
     quantity?: number
   }>({ productName: '' })
+  const [mounted, setMounted] = useState(false)
   const { addItem } = useCart()
   const router = useRouter()
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   useEffect(() => {
     if (isOpen && productId) {
@@ -195,13 +202,13 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
     }
   }
 
-  if (!isOpen) return null
+  if (!mounted || !isOpen) return null
 
-  const discountedPrice = product && product.discount > 0 
+  const discountedPrice = product && product.discount > 0
     ? product.price * (1 - product.discount / 100)
     : product?.price || 0
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
@@ -455,6 +462,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
         quantity={cartNotificationData.quantity}
         subdomain={subdomain}
       />
-    </div>
+    </div>,
+    document.body
   )
 }
