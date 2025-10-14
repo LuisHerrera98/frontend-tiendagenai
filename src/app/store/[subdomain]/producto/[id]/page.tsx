@@ -372,16 +372,16 @@ export default function ProductDetailPage() {
                   {product.stock.map((item) => {
                     const isAvailable = item.quantity > 0
                     const isSelected = selectedSize === item.size.id
-                    
+
                     return (
                       <button
                         key={item.size.id}
                         onClick={() => isAvailable && setSelectedSize(item.size.id)}
                         disabled={!isAvailable}
                         className={`
-                          py-2 px-4 rounded-md border font-medium text-sm transition-all
-                          ${isSelected 
-                            ? 'border-black bg-black text-white' 
+                          relative py-2 px-4 rounded-md border font-medium text-sm transition-all
+                          ${isSelected
+                            ? 'border-black bg-black text-white'
                             : isAvailable
                               ? 'border-gray-300 hover:border-gray-500 bg-white'
                               : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed line-through'
@@ -389,10 +389,20 @@ export default function ProductDetailPage() {
                         `}
                       >
                         {item.size.name}
+                        {isSelected && isAvailable && (
+                          <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">
+                            {item.quantity}
+                          </span>
+                        )}
                       </button>
                     )
                   })}
                 </div>
+                {selectedSize && product.stock.find(s => s.size.id === selectedSize) && (
+                  <p className="text-sm text-gray-600 mt-3">
+                    {product.stock.find(s => s.size.id === selectedSize)!.quantity} {product.stock.find(s => s.size.id === selectedSize)!.quantity === 1 ? 'unidad disponible' : 'unidades disponibles'}
+                  </p>
+                )}
               </div>
             )}
 
