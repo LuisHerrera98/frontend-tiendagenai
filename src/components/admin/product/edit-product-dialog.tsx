@@ -47,6 +47,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     category_id: '',
     active: true,
     discount: '',
+    description: '',
   })
   const [productSizes, setProductSizes] = useState<{[key: string]: {name: string, quantity: number, selected: boolean}}>({})
 
@@ -161,7 +162,8 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
         active: product.active ?? true,
         discount: product.discount?.toString() || '0',
         gender_id: product.gender_id || '',
-        color_id: product.color_id || ''
+        color_id: product.color_id || '',
+        description: product.description || ''
       })
       
       // Set existing stock data ONLY on initial load
@@ -238,7 +240,8 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       discount: parseFloat(formData.discount),
       gender_id: formData.gender_id,
       color_id: formData.color_id,
-      stock: stockArray
+      stock: stockArray,
+      description: formData.description
     }
 
     updateMutation.mutate({ id: product._id, data: updateData })
@@ -492,6 +495,19 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
                 onChange={(value) => setFormData({ ...formData, color_id: value })}
                 placeholder="Seleccionar color"
               />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="description">Descripción (Opcional)</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe las características del producto..."
+                className="resize-none"
+                rows={3}
+              />
+              <p className="text-xs text-gray-500">Esta descripción se mostrará en la página del producto</p>
             </div>
 
             <div className="space-y-2">

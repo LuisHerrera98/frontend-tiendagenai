@@ -18,6 +18,7 @@ export interface Product {
   images: string[]  // Ahora son URLs directas
   stock: ProductStock[]
   stockType?: 'sizes' | 'unit'  // Tipo de stock: por talles o unidad
+  description?: string
   createdAt: string
   updatedAt: string
 }
@@ -98,6 +99,7 @@ export interface CreateProductDto {
   stock: Omit<ProductStock, 'available'>[]
   stockType?: 'sizes' | 'unit'
   images?: string[]  // Array of URLs from Cloudinary
+  description?: string
 }
 
 export interface UpdateProductDto {
@@ -118,6 +120,7 @@ export interface UpdateProductDto {
   stock?: ProductStock[]
   stockType?: 'sizes' | 'unit'
   images?: string[] | ProductImage[]  // Can be URLs or existing images
+  description?: string
 }
 
 export interface ProductFilters {

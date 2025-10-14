@@ -274,6 +274,18 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
                 </div>
               </div>
 
+              {/* Description */}
+              {product.description && (
+                <div>
+                  <Label className="text-sm text-gray-600 mb-2 block">Descripción</Label>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {product.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Stock by Size */}
               {product.stock && product.stock.length > 0 && (
                 <div>

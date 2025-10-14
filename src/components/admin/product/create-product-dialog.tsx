@@ -53,6 +53,7 @@ const productSchema = z.object({
   gender_id: z.string().optional(),
   genders: z.array(z.string()).optional(),
   color_id: z.string().optional(),
+  description: z.string().optional(),
 })
 
 type ProductFormData = {
@@ -68,6 +69,7 @@ type ProductFormData = {
   gender_id?: string
   genders?: string[]
   color_id?: string
+  description?: string
 }
 
 interface CreateProductDialogProps {
@@ -98,6 +100,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       gender_id: '',
       genders: [],
       color_id: '',
+      description: '',
     },
   })
 
@@ -214,8 +217,9 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
         genders: data.genders || [],
         color_id: data.color_id,
         active: data.active !== undefined ? data.active : true, // Asegurar que active se envíe
+        description: data.description,
       }
-      
+
       mutation.mutate(productData)
     } catch (error) {
       console.error('Error al procesar el producto:', error)
@@ -431,6 +435,28 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                       ))}
                     </div>
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descripción (Opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Describe las características del producto..."
+                      className="resize-none"
+                      rows={3}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Esta descripción se mostrará en la página del producto
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
