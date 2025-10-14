@@ -24,7 +24,7 @@ interface ProductDetail {
   discount: number
   code: string
   images: string[]
-  stockType?: 'sizes' | 'pack'
+  stockType?: 'sizes' | 'unit'
   categoryId?: string
   stock: Array<{
     size: {
@@ -86,7 +86,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
       setProduct(response.data)
       
       // Auto-select first available size for size-based products
-      if (response.data.stockType !== 'pack' && response.data.stock?.length > 0) {
+      if (response.data.stockType !== 'unit' && response.data.stock?.length > 0) {
         const availableSize = response.data.stock.find((s: any) => s.quantity > 0)
         if (availableSize) {
           setSelectedSize(availableSize.size.id)
@@ -118,7 +118,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
     let productNameWithSize = product.name
     let selectedSizeName = ''
 
-    if (product.stockType === 'pack') {
+    if (product.stockType === 'unit') {
       // Para productos tipo pack
       if (quantity < 1) return
       
@@ -128,7 +128,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
       addItem({
         productId: product.id,
         productName: product.name,
-        sizeId: 'pack',
+        sizeId: 'unit',
         sizeName: 'PAQUETE',
         quantity: quantity,
         price: product.price,
@@ -183,7 +183,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
   const getMaxQuantity = () => {
     if (!product) return 1
     
-    if (product.stockType === 'pack') {
+    if (product.stockType === 'unit') {
       return product.stock?.[0]?.quantity || 1
     } else if (selectedSize) {
       const stock = product.stock.find(s => s.size.id === selectedSize)
@@ -195,7 +195,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
   const hasStock = () => {
     if (!product) return false
     
-    if (product.stockType === 'pack') {
+    if (product.stockType === 'unit') {
       return product.stock?.[0]?.quantity > 0
     } else {
       return product.stock?.some(s => s.quantity > 0)
@@ -308,7 +308,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
                     {hasStock() ? (
                       <>
                         {/* Size selector for size-based products */}
-                        {product.stockType !== 'pack' && (
+                        {product.stockType !== 'unit' && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Talle
@@ -338,7 +338,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
                         {/* Quantity selector */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Cantidad {product.stockType === 'pack' && 'de paquetes'}
+                            Cantidad {product.stockType === 'unit' && 'de unidades'}
                           </label>
                           <div className="flex items-center gap-3">
                             <button
@@ -359,10 +359,10 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
                               <Plus className="w-5 h-5" />
                             </button>
                           </div>
-                          {(product.stockType === 'pack' ? product.stock?.[0]?.quantity : 
+                          {(product.stockType === 'unit' ? product.stock?.[0]?.quantity : 
                             (selectedSize && product.stock.find(s => s.size.id === selectedSize)?.quantity)) && (
                             <p className="text-sm text-gray-500 mt-1">
-                              {product.stockType === 'pack' 
+                              {product.stockType === 'unit' 
                                 ? `${product.stock[0].quantity} paquetes disponibles`
                                 : `${product.stock.find(s => s.size.id === selectedSize)?.quantity} unidades disponibles`
                               }
@@ -429,7 +429,7 @@ export function QuickBuyModal({ isOpen, onClose, productId, subdomain }: QuickBu
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
                 <button
                   onClick={handleAddToCart}
-                  disabled={!hasStock() || (product.stockType !== 'pack' && !selectedSize)}
+                  disabled={!hasStock() || (product.stockType !== 'unit' && !selectedSize)}
                   className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-6 py-2.5 bg-black text-white font-medium rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   <ShoppingCart className="w-5 h-5" />

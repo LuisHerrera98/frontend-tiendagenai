@@ -167,11 +167,11 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       // Set existing stock data ONLY on initial load
       if (product.stock && product.stock.length > 0) {
         const initialSizes: {[key: string]: {name: string, quantity: number, selected: boolean}} = {}
-        
-        // Para productos tipo pack, usar configuración especial
-        if (product.stockType === 'pack') {
-          initialSizes['pack'] = {
-            name: 'PAQUETE',
+
+        // Para productos tipo unit, usar configuración especial
+        if (product.stockType === 'unit') {
+          initialSizes['unit'] = {
+            name: 'unit',
             quantity: product.stock[0]?.quantity || 0,
             selected: true
           }
@@ -524,10 +524,10 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
           {/* Sizes and Stock Management - Full Width */}
           <div className="space-y-4 mt-6 pt-6 border-t">
             <Label className="text-base font-medium">
-              {product?.stockType === 'pack' ? 'Stock por paquete/bloque' : 'Talles y Stock'}
-              {product?.stockType === 'pack' ? (
+              {product?.stockType === 'unit' ? 'Stock por unidades' : 'Talles y Stock'}
+              {product?.stockType === 'unit' ? (
                 <Badge variant="outline" className="ml-2 text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200">
-                  Por paquete/bloque
+                  Por unidades
                 </Badge>
               ) : (
                 <Badge variant="outline" className="ml-2 text-xs px-1.5 py-0 h-5 bg-green-50 text-green-700 border-green-200">
@@ -536,20 +536,20 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
               )}
             </Label>
             <div className="space-y-3 max-h-40 overflow-y-auto">
-              {product?.stockType === 'pack' ? (
-                // Para productos tipo pack, solo mostrar campo de cantidad
+              {product?.stockType === 'unit' ? (
+                // Para productos tipo unit, solo mostrar campo de cantidad
                 <div className="flex items-center space-x-3 p-3 border rounded bg-gray-50">
                   <Label className="text-sm">Cantidad disponible:</Label>
                   <Input
                     type="number"
                     min="0"
-                    value={productSizes['pack']?.quantity !== undefined ? productSizes['pack'].quantity : (product?.stock?.[0]?.quantity || 0)}
+                    value={productSizes['unit']?.quantity !== undefined ? productSizes['unit'].quantity : (product?.stock?.[0]?.quantity || 0)}
                     onChange={(e) => {
                       const value = e.target.value;
                       const newQuantity = value === '' ? 0 : parseInt(value);
                       setProductSizes({
-                        'pack': {
-                          name: 'PAQUETE',
+                        'unit': {
+                          name: 'unit',
                           quantity: isNaN(newQuantity) ? 0 : Math.max(0, newQuantity),
                           selected: true
                         }
@@ -558,7 +558,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
                     placeholder="0"
                     className="w-32"
                   />
-                  <span className="text-sm text-gray-500">paquetes</span>
+                  <span className="text-sm text-gray-500">unidades</span>
                 </div>
               ) : !formData.category_id ? (
                 <p className="text-sm text-gray-500 p-4 text-center border rounded bg-gray-50">

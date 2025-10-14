@@ -222,7 +222,7 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
                       'text-red-600'
                     }`}>
                       {totalStock} <span className="text-sm font-normal">
-                        {product.stockType === 'pack' ? 'paquetes' : 'unidades'}
+                        {product.stockType === 'unit' ? 'unidades' : 'unidades'}
                       </span>
                     </p>
                   </div>

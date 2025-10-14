@@ -91,7 +91,7 @@ export function CartNotification({
                 <h3 className="font-semibold text-gray-900 truncate">
                   {productName}
                 </h3>
-                {sizeName && sizeName !== 'pack' && sizeName !== 'PAQUETE' && (
+                {sizeName && sizeName !== 'unit' && sizeName !== 'UNIDAD' && (
                   <p className="text-sm text-gray-600">
                     Talle: {sizeName}
                   </p>

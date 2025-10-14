@@ -35,7 +35,7 @@ interface ProductDetail {
   code: string
   gender: string
   images: string[]
-  stockType?: 'sizes' | 'pack'
+  stockType?: 'sizes' | 'unit'
   category: {
     id: string
     name: string
@@ -104,7 +104,7 @@ export default function ProductDetailPage() {
       setProduct(response.data)
       
       // Auto-select first available size for non-pack products
-      if (response.data.stockType !== 'pack' && response.data.stock?.length > 0) {
+      if (response.data.stockType !== 'unit' && response.data.stock?.length > 0) {
         const firstAvailable = response.data.stock.find((s: any) => s.quantity > 0)
         if (firstAvailable) {
           setSelectedSize(firstAvailable.size.id)
@@ -121,15 +121,15 @@ export default function ProductDetailPage() {
     if (!product) return
     
     // For size products, check if size is selected
-    if (product.stockType !== 'pack' && !selectedSize && product.stock?.length > 0) {
+    if (product.stockType !== 'unit' && !selectedSize && product.stock?.length > 0) {
       alert('Por favor selecciona un talle')
       return
     }
 
     // Check stock
-    if (product.stockType === 'pack') {
-      const packStock = product.stock?.[0]?.quantity || 0
-      if (packStock < quantity) {
+    if (product.stockType === 'unit') {
+      const unitStock = product.stock?.[0]?.quantity || 0
+      if (unitStock < quantity) {
         alert('No hay suficiente stock disponible')
         return
       }
@@ -142,14 +142,14 @@ export default function ProductDetailPage() {
     }
 
     // Add to cart
-    const sizeName = product.stockType === 'pack' 
+    const sizeName = product.stockType === 'unit' 
       ? 'PAQUETE'
       : product.stock.find(s => s.size.id === selectedSize)?.size.name || 'Único'
 
     addItem({
       productId: product.id,
       productName: product.name,
-      sizeId: selectedSize || 'pack',
+      sizeId: selectedSize || 'unit',
       sizeName: sizeName,
       quantity: quantity,
       price: product.price,
@@ -174,9 +174,9 @@ export default function ProductDetailPage() {
   const incrementQuantity = () => {
     if (!product) return
     
-    if (product.stockType === 'pack') {
-      const packStock = product.stock?.[0]?.quantity || 999
-      if (quantity < packStock) {
+    if (product.stockType === 'unit') {
+      const unitStock = product.stock?.[0]?.quantity || 999
+      if (quantity < unitStock) {
         setQuantity(quantity + 1)
       }
     } else if (selectedSize) {
@@ -218,7 +218,7 @@ export default function ProductDetailPage() {
     ? product.price * (1 - product.discount / 100)
     : product.price
 
-  const hasStock = product.stockType === 'pack' 
+  const hasStock = product.stockType === 'unit' 
     ? product.stock?.[0]?.quantity > 0
     : product.stock?.some(s => s.quantity > 0)
 
@@ -365,7 +365,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Size Selector or Color Info */}
-            {product.stockType !== 'pack' && product.stock && product.stock.length > 0 && (
+            {product.stockType !== 'unit' && product.stock && product.stock.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-3 uppercase text-sm">Talle</h3>
                 <div className="flex flex-wrap gap-2">
@@ -399,7 +399,7 @@ export default function ProductDetailPage() {
             {/* Quantity Selector */}
             <div>
               <h3 className="font-semibold mb-3 uppercase">
-                {product.stockType === 'pack' ? 'Cantidad de Paquetes' : 'Cantidad'}
+                {product.stockType === 'unit' ? 'Cantidad de Unidades' : 'Cantidad'}
               </h3>
               <div className="flex items-center gap-4">
                 <div className="flex items-center border-2 border-gray-300 rounded-lg">
@@ -437,7 +437,7 @@ export default function ProductDetailPage() {
               {hasStock ? (
                 <button
                   onClick={handleAddToCart}
-                  disabled={product.stockType !== 'pack' && !selectedSize && product.stock?.length > 0}
+                  disabled={product.stockType !== 'unit' && !selectedSize && product.stock?.length > 0}
                   className="w-full py-4 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   <ShoppingCart className="w-5 h-5" />

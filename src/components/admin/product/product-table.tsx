@@ -161,7 +161,7 @@ export function ProductTable({
                       {getTotalStock(product)}
                     </span>
                     <span className="text-[10px] text-gray-500">
-                      {product.stockType === 'pack' ? 'paquetes' : 'unidades'}
+                      {product.stockType === 'unit' ? 'unidades' : 'unidades'}
                     </span>
                   </div>
                 </td>

@@ -17,7 +17,7 @@ export interface Product {
   genders?: string[]  // Array de géneros
   images: string[]  // Ahora son URLs directas
   stock: ProductStock[]
-  stockType?: 'sizes' | 'pack'  // Tipo de stock: por talles o paquete
+  stockType?: 'sizes' | 'unit'  // Tipo de stock: por talles o unidad
   createdAt: string
   updatedAt: string
 }
@@ -96,7 +96,7 @@ export interface CreateProductDto {
   active?: boolean
   gender?: 'hombre' | 'mujer' | 'unisex'
   stock: Omit<ProductStock, 'available'>[]
-  stockType?: 'sizes' | 'pack'
+  stockType?: 'sizes' | 'unit'
   images?: string[]  // Array of URLs from Cloudinary
 }
 
@@ -116,7 +116,7 @@ export interface UpdateProductDto {
   active?: boolean
   gender?: 'hombre' | 'mujer' | 'unisex'
   stock?: ProductStock[]
-  stockType?: 'sizes' | 'pack'
+  stockType?: 'sizes' | 'unit'
   images?: string[] | ProductImage[]  // Can be URLs or existing images
 }
 

@@ -194,9 +194,9 @@ export function ProductList() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{product.name}</span>
-                        {product.stockType === 'pack' ? (
+                        {product.stockType === 'unit' ? (
                           <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200">
-                            Por paquete/bloque
+                            Por unidades
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-green-50 text-green-700 border-green-200">
@@ -250,7 +250,7 @@ export function ProductList() {
                           {product.stock?.reduce((sum, item) => sum + item.quantity, 0) || 0}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {product.stockType === 'pack' ? 'paquetes' : 'unidades'}
+                          {product.stockType === 'unit' ? 'unidades' : 'unidades'}
                         </span>
                       </div>
                     </TableCell>

@@ -1,5 +1,12 @@
 # Multi-Tenant E-commerce Platform - Frontend
 
+## ⚠️ REGLA CRÍTICA PARA CLAUDE
+**NUNCA iniciar el servidor frontend a menos que el usuario lo solicite explícitamente.**
+- ❌ NO ejecutar: `npm run dev`, `npm start`, `npm run build && npm start`, etc.
+- ❌ NO usar comandos que inicien el servidor en puerto 3001
+- ✅ SOLO el usuario decide cuándo iniciar/detener el frontend
+- 💡 Si necesitas verificar que algo funciona, PREGUNTAR primero
+
 ## 🏗️ Arquitectura del Sistema
 
 ### Stack Tecnológico
