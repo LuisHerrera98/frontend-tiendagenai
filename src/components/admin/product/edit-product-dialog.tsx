@@ -48,6 +48,8 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     active: true,
     discount: '',
     description: '',
+    installmentText: '',
+    withoutStock: false,
   })
   const [productSizes, setProductSizes] = useState<{[key: string]: {name: string, quantity: number, selected: boolean}}>({})
 
@@ -163,7 +165,9 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
         discount: product.discount?.toString() || '0',
         gender_id: product.gender_id || '',
         color_id: product.color_id || '',
-        description: product.description || ''
+        description: product.description || '',
+        installmentText: product.installmentText || '',
+        withoutStock: product.withoutStock ?? false,
       })
       
       // Set existing stock data ONLY on initial load
@@ -241,7 +245,9 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       gender_id: formData.gender_id,
       color_id: formData.color_id,
       stock: stockArray,
-      description: formData.description
+      description: formData.description,
+      installmentText: formData.installmentText,
+      withoutStock: formData.withoutStock,
     }
 
     updateMutation.mutate({ id: product._id, data: updateData })
@@ -510,6 +516,18 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
               <p className="text-xs text-gray-500">Esta descripción se mostrará en la página del producto</p>
             </div>
 
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="installmentText">Texto de Cuotas (Opcional)</Label>
+              <Input
+                id="installmentText"
+                value={formData.installmentText}
+                onChange={(e) => setFormData({ ...formData, installmentText: e.target.value })}
+                placeholder="Ej: 3 cuotas sin interés"
+                autoComplete="off"
+              />
+              <p className="text-xs text-gray-500">Este texto se mostrará debajo del precio del producto</p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="active">Estado del Producto</Label>
               <div className="bg-gray-50 rounded-lg border p-3">
@@ -530,6 +548,21 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
                       className="data-[state=checked]:bg-green-600"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-row items-start space-x-3 p-3 border rounded bg-gray-50">
+                <Checkbox
+                  id="withoutStock"
+                  checked={formData.withoutStock}
+                  onCheckedChange={(checked) => setFormData({ ...formData, withoutStock: !!checked })}
+                  className="h-5 w-5 mt-0.5"
+                />
+                <div className="space-y-1 leading-none">
+                  <Label htmlFor="withoutStock" className="cursor-pointer">Sin stock</Label>
+                  <p className="text-xs text-gray-600">Mostrar como "Consultar Stock" en la tienda</p>
                 </div>
               </div>
             </div>

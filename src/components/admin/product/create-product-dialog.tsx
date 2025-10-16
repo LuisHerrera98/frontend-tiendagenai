@@ -54,6 +54,8 @@ const productSchema = z.object({
   genders: z.array(z.string()).optional(),
   color_id: z.string().optional(),
   description: z.string().optional(),
+  installmentText: z.string().optional(),
+  withoutStock: z.boolean(),
 })
 
 type ProductFormData = {
@@ -70,6 +72,8 @@ type ProductFormData = {
   genders?: string[]
   color_id?: string
   description?: string
+  installmentText?: string
+  withoutStock: boolean
 }
 
 interface CreateProductDialogProps {
@@ -101,6 +105,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       genders: [],
       color_id: '',
       description: '',
+      installmentText: '',
+      withoutStock: false,
     },
   })
 
@@ -218,6 +224,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
         color_id: data.color_id,
         active: data.active !== undefined ? data.active : true, // Asegurar que active se envíe
         description: data.description,
+        installmentText: data.installmentText,
+        withoutStock: data.withoutStock,
       }
 
       mutation.mutate(productData)
@@ -266,6 +274,9 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       gender_id: '',
       genders: [],
       color_id: '',
+      description: '',
+      installmentText: '',
+      withoutStock: false,
     })
     setSelectedImageFiles([])
     setSelectedSizes([])
@@ -462,6 +473,27 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="installmentText"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Texto de Cuotas (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Ej: 3 cuotas sin interés"
+                      autoComplete="off"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Este texto se mostrará debajo del precio del producto
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -564,25 +596,47 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="active"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-3 border rounded bg-gray-50">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      className="h-5 w-5 mt-0.5"
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="cursor-pointer">Producto activo</FormLabel>
-                    <p className="text-xs text-gray-600">El producto estará visible en la tienda</p>
-                  </div>
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="active"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-3 border rounded bg-gray-50">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="h-5 w-5 mt-0.5"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="cursor-pointer">Producto activo</FormLabel>
+                      <p className="text-xs text-gray-600">El producto estará visible en la tienda</p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="withoutStock"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-3 border rounded bg-gray-50">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="h-5 w-5 mt-0.5"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="cursor-pointer">Sin stock</FormLabel>
+                      <p className="text-xs text-gray-600">Mostrar como "Consultar Stock" en la tienda</p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div>
               <Label className="text-base font-medium">Imágenes del Producto</Label>

@@ -19,6 +19,8 @@ export interface Product {
   stock: ProductStock[]
   stockType?: 'sizes' | 'unit'  // Tipo de stock: por talles o unidad
   description?: string
+  installmentText?: string
+  withoutStock?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -100,6 +102,8 @@ export interface CreateProductDto {
   stockType?: 'sizes' | 'unit'
   images?: string[]  // Array of URLs from Cloudinary
   description?: string
+  installmentText?: string
+  withoutStock?: boolean
 }
 
 export interface UpdateProductDto {
@@ -121,6 +125,8 @@ export interface UpdateProductDto {
   stockType?: 'sizes' | 'unit'
   images?: string[] | ProductImage[]  // Can be URLs or existing images
   description?: string
+  installmentText?: string
+  withoutStock?: boolean
 }
 
 export interface ProductFilters {

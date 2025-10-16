@@ -36,6 +36,8 @@ interface ProductDetail {
   gender: string
   images: string[]
   stockType?: 'sizes' | 'unit'
+  installmentText?: string
+  withoutStock?: boolean
   category: {
     id: string
     name: string
@@ -347,6 +349,12 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
               )}
+
+              {product.installmentText && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600">{product.installmentText}</p>
+                </div>
+              )}
             </div>
 
             {/* Free Shipping Message */}
@@ -459,7 +467,7 @@ export default function ProductDetailPage() {
                     disabled
                     className="w-full py-4 bg-gray-200 text-gray-500 font-semibold rounded-lg cursor-not-allowed"
                   >
-                    Sin Stock
+                    {product.withoutStock ? 'Consultar Stock' : 'Sin Stock'}
                   </button>
                   <WhatsAppProductConsultation product={product} storePhone={storeData?.settings?.whatsapp} />
                 </>
