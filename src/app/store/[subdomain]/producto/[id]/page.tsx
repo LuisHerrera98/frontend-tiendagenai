@@ -467,7 +467,7 @@ export default function ProductDetailPage() {
                     disabled
                     className="w-full py-4 bg-gray-200 text-gray-500 font-semibold rounded-lg cursor-not-allowed"
                   >
-                    {product.withoutStock ? 'Consultar Stock' : 'Sin Stock'}
+                    {product.withoutStock ? 'Consultar stock próximo' : 'Sin Stock'}
                   </button>
                   <WhatsAppProductConsultation product={product} storePhone={storeData?.settings?.whatsapp} />
                 </>

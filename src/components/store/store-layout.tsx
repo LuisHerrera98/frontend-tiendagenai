@@ -23,7 +23,7 @@ export function StoreLayout({ children, storeData }: StoreLayoutProps) {
   const paddingTop = storeData.settings?.freeShippingEnabled ? 'pt-[104px]' : 'pt-[64px]'
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className="min-h-screen flex flex-col relative" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       <style jsx global>{`
         :root {
           --store-primary: ${primaryColor};
