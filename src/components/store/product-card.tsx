@@ -70,6 +70,13 @@ export function ProductCard({ product }: ProductCardProps) {
             ${product.price.toLocaleString('es-AR')}
           </p>
 
+          {/* Texto de cuotas (si existe) */}
+          {product.installmentText && (
+            <p className="text-xs sm:text-sm text-gray-600">
+              {product.installmentText}
+            </p>
+          )}
+
           {/* Precio transferencia (si existe) */}
           {product.cashPrice && (
             <div className="flex items-start gap-1">
@@ -78,13 +85,6 @@ export function ProductCard({ product }: ProductCardProps) {
               </p>
               <span className="text-xs text-green-600 -mt-1.5">con Transferencia</span>
             </div>
-          )}
-
-          {/* Texto de cuotas (si existe) */}
-          {product.installmentText && (
-            <p className="text-xs sm:text-sm text-gray-600">
-              {product.installmentText}
-            </p>
           )}
 
           {/* Mensaje de consultar stock (si withoutStock es true) - siempre abajo de todo */}
