@@ -2,9 +2,6 @@ import axios from 'axios'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
 
-console.log('Environment variable:', process.env.NEXT_PUBLIC_API_URL)
-console.log('Final API URL:', API_URL)
-
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -34,24 +31,12 @@ api.interceptors.request.use((config) => {
     }
   }
 
-  // Solo log para requests importantes o de debugging
-  if (config.url?.includes('/sell/register')) {
-    console.log('Sale request:', config.method?.toUpperCase(), config.url)
-  }
-  if (config.url?.includes('/exchange')) {
-    console.log('Exchange request:', config.method?.toUpperCase(), config.url)
-    console.log('Exchange data:', config.data)
-  }
   return config
 })
 
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    // Solo log para responses importantes
-    if (response.config.url?.includes('/sell/register')) {
-      console.log('Sale registered successfully')
-    }
     return response
   },
   (error) => {

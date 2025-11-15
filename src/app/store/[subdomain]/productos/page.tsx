@@ -68,7 +68,7 @@ function ProductsContent() {
     colors: [] as string[],
     brands: [] as string[]
   })
-  const limit = 12
+  const limit = 20
 
   useEffect(() => {
     fetchStoreData()
@@ -86,12 +86,15 @@ function ProductsContent() {
   }, [searchParams])
 
   useEffect(() => {
-    // Llamar a fetchProducts cuando cambie la categoría, página o filtros
-    fetchProducts()
     // Obtener opciones de filtros cuando cambie la categoría
     if (selectedCategory) {
       fetchFilterOptions()
     }
+  }, [selectedCategory])
+
+  useEffect(() => {
+    // Llamar a fetchProducts cuando cambie la categoría, página o filtros
+    fetchProducts()
   }, [selectedCategory, currentPage, selectedFilters])
 
   const fetchStoreData = async () => {
@@ -136,7 +139,7 @@ function ProductsContent() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const targetSubdomain = process.env.NODE_ENV === 'development' && subdomain === 'test' 
+      const targetSubdomain = process.env.NODE_ENV === 'development' && subdomain === 'test'
         ? localStorage.getItem('tenant_subdomain') || subdomain
         : subdomain
 
@@ -160,6 +163,11 @@ function ProductsContent() {
       const response = await api.get(`/public/products/${targetSubdomain}?${params}`)
       setProducts(response.data.products)
       setTotalPages(response.data.pagination.totalPages)
+
+      // Scroll reset al cambiar página
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     } catch (err) {
       console.error('Error fetching products:', err)
     } finally {
@@ -333,10 +341,11 @@ function ProductsContent() {
                         onClick={() => {
                           setSelectedFilters(prev => ({
                             ...prev,
-                            sizes: prev.sizes.includes(size.id) 
+                            sizes: prev.sizes.includes(size.id)
                               ? prev.sizes.filter(s => s !== size.id)
                               : [...prev.sizes, size.id]
                           }))
+                          setCurrentPage(1)
                         }}
                         className={`px-3 py-1.5 border rounded-lg transition-colors ${
                           selectedFilters.sizes.includes(size.id)
@@ -362,10 +371,11 @@ function ProductsContent() {
                         onClick={() => {
                           setSelectedFilters(prev => ({
                             ...prev,
-                            colors: prev.colors.includes(color.id) 
+                            colors: prev.colors.includes(color.id)
                               ? prev.colors.filter(c => c !== color.id)
                               : [...prev.colors, color.id]
                           }))
+                          setCurrentPage(1)
                         }}
                         className={`px-3 py-1.5 border rounded-lg transition-colors ${
                           selectedFilters.colors.includes(color.id)
@@ -391,10 +401,11 @@ function ProductsContent() {
                         onClick={() => {
                           setSelectedFilters(prev => ({
                             ...prev,
-                            brands: prev.brands.includes(brand.id) 
+                            brands: prev.brands.includes(brand.id)
                               ? prev.brands.filter(b => b !== brand.id)
                               : [...prev.brands, brand.id]
                           }))
+                          setCurrentPage(1)
                         }}
                         className={`px-3 py-1.5 border rounded-lg transition-colors ${
                           selectedFilters.brands.includes(brand.id)
@@ -414,6 +425,7 @@ function ProductsContent() {
               <button
                 onClick={() => {
                   setSelectedFilters({ sizes: [], colors: [], brands: [] })
+                  setCurrentPage(1)
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
@@ -422,7 +434,7 @@ function ProductsContent() {
               <button
                 onClick={() => {
                   setShowFilterModal(false)
-                  fetchProducts()
+                  setCurrentPage(1)
                 }}
                 className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
               >
