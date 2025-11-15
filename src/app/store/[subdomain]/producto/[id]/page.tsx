@@ -338,6 +338,11 @@ export default function ProductDetailPage() {
                 </span>
               )}
 
+              {product.installmentText && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600">{product.installmentText}</p>
+                </div>
+              )}
 
               {product.cashPrice && product.cashPrice < product.price && (
                 <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -347,12 +352,6 @@ export default function ProductDetailPage() {
                     </span>
                     <span className="text-sm text-green-600">con Transferencia</span>
                   </div>
-                </div>
-              )}
-
-              {product.installmentText && (
-                <div className="mt-2">
-                  <p className="text-sm text-gray-600">{product.installmentText}</p>
                 </div>
               )}
             </div>
