@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ShoppingCart } from 'lucide-react'
 import { getProductImage } from '@/lib/cloudinary-transforms'
 import { useParams } from 'next/navigation'
+import { formatPrice } from '@/lib/utils'
 
 interface Product {
   id: string
@@ -81,7 +82,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.cashPrice && (
             <div className="flex flex-col items-start gap-0.5">
               <p className="text-[19px] sm:text-[23px] font-bold text-green-700 leading-none">
-                ${product.cashPrice.toLocaleString('es-AR')}
+                ${formatPrice(product.cashPrice)}
               </p>
               <span className="text-[10px] sm:text-xs text-green-600 leading-tight">con Transferencia</span>
             </div>

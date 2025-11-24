@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { formatPrice } from '@/lib/utils'
 
 interface ViewProductDialogProps {
   open: boolean
@@ -234,11 +235,11 @@ export function ViewProductDialog({ open, onOpenChange, product }: ViewProductDi
                       <Label className="text-sm text-gray-600">Precio Efectivo/Transferencia</Label>
                       <div className="flex items-baseline gap-3">
                         <p className="text-2xl font-bold text-green-600">
-                          ${Math.floor(product.cashPrice) === product.cashPrice ? product.cashPrice.toLocaleString() : product.cashPrice.toFixed(2)}
+                          ${formatPrice(product.cashPrice)}
                         </p>
                         {product.price > product.cashPrice && (
                           <span className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                            Ahorra ${(product.price - product.cashPrice).toFixed(2)}
+                            Ahorra ${formatPrice(product.price - product.cashPrice)}
                           </span>
                         )}
                       </div>

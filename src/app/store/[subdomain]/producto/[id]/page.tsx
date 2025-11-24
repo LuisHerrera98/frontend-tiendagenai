@@ -10,6 +10,7 @@ import { useCart } from '@/contexts/cart-context'
 import { useRouter } from 'next/navigation'
 import { CartNotification } from '@/components/store/cart-notification'
 import { WhatsAppProductConsultation } from '@/components/store/whatsapp-product-consultation'
+import { formatPrice } from '@/lib/utils'
 
 interface StoreData {
   id: string
@@ -348,7 +349,7 @@ export default function ProductDetailPage() {
                 <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-baseline gap-2">
                     <span className="text-xl font-bold text-green-700">
-                      ${product.cashPrice.toLocaleString('es-AR')}
+                      ${formatPrice(product.cashPrice)}
                     </span>
                     <span className="text-sm text-green-600">con Transferencia</span>
                   </div>
