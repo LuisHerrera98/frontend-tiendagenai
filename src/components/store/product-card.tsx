@@ -79,11 +79,11 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Precio transferencia (si existe) */}
           {product.cashPrice && (
-            <div className="flex items-start gap-1">
+            <div className="flex flex-col items-start gap-0.5">
               <p className="text-[19px] sm:text-[23px] font-bold text-green-700 leading-none">
                 ${product.cashPrice.toLocaleString('es-AR')}
               </p>
-              <span className="text-xs text-green-600 -mt-1.5">con Transferencia</span>
+              <span className="text-[10px] sm:text-xs text-green-600 leading-tight">con Transferencia</span>
             </div>
           )}
 
