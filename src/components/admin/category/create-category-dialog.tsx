@@ -75,6 +75,8 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
       const errorData = error?.response?.data
       if (errorData?.error === 'DUPLICATE_CATEGORY' || errorData?.message?.includes('Ya existe una categoría con ese nombre')) {
         setToastMessage('Ya existe una categoría con ese nombre. Por favor, elige un nombre diferente.')
+      } else if (errorData?.error === 'DUPLICATE_ORDER' || errorData?.message?.includes('Ya existe una categoría con el orden')) {
+        setToastMessage(errorData?.message || 'Ya existe una categoría con ese número de orden.')
       } else {
         setToastMessage('Error al crear la categoría. Por favor, intenta nuevamente.')
       }
