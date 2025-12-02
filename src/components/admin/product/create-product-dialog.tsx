@@ -46,8 +46,9 @@ const productSchema = z.object({
   type_id: z.string().optional(),
   category_id: z.string().optional(),
   cost: z.number().min(0, 'El costo debe ser mayor a 0'),
-  price: z.number().min(0, 'El precio debe ser mayor a 0'),
-  cashPrice: z.number().min(0).optional(),
+  cashPrice: z.number().min(0, 'El precio efectivo debe ser mayor a 0'),
+  listPricePercentage: z.number().min(0).max(100).optional(),
+  price: z.number().min(0).optional(),
   discount: z.number().min(0).max(100).optional(),
   active: z.boolean(),
   gender_id: z.string().optional(),
@@ -64,8 +65,9 @@ type ProductFormData = {
   type_id?: string
   category_id?: string
   cost: number
-  price: number
-  cashPrice?: number
+  cashPrice: number
+  listPricePercentage?: number
+  price?: number
   discount?: number
   active: boolean
   gender_id?: string
@@ -98,6 +100,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       type_id: '',
       category_id: '',
       cost: '' as any,
+      cashPrice: '' as any,
+      listPricePercentage: 25,
       price: '' as any,
       discount: 0 as any,
       active: true,
@@ -109,6 +113,20 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       withoutStock: false,
     },
   })
+
+  // Watch para calcular precio lista automáticamente
+  const watchCashPrice = form.watch('cashPrice')
+  const watchPercentage = form.watch('listPricePercentage')
+
+  useEffect(() => {
+    if (watchCashPrice && watchPercentage !== undefined) {
+      const cashPriceNum = typeof watchCashPrice === 'string' ? parseFloat(watchCashPrice) : watchCashPrice
+      if (cashPriceNum > 0) {
+        const calculatedPrice = Math.round(cashPriceNum * (1 + watchPercentage / 100))
+        form.setValue('price', calculatedPrice)
+      }
+    }
+  }, [watchCashPrice, watchPercentage, form])
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -211,18 +229,23 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
         })
       }
 
+      const cashPriceNum = typeof data.cashPrice === 'string' ? parseFloat(data.cashPrice) || 0 : data.cashPrice
+      const percentageNum = typeof data.listPricePercentage === 'string' ? parseFloat(data.listPricePercentage) || 25 : data.listPricePercentage || 25
+      const calculatedListPrice = Math.round(cashPriceNum * (1 + percentageNum / 100))
+
       const productData: CreateProductDto = {
         ...data,
         cost: typeof data.cost === 'string' ? parseFloat(data.cost) || 0 : data.cost,
-        price: typeof data.price === 'string' ? parseFloat(data.price) || 0 : data.price,
-        cashPrice: data.cashPrice ? (typeof data.cashPrice === 'string' ? parseFloat(data.cashPrice) || 0 : data.cashPrice) : undefined,
+        cashPrice: cashPriceNum,
+        listPricePercentage: percentageNum,
+        price: calculatedListPrice,
         discount: typeof data.discount === 'string' ? parseFloat(data.discount) || 0 : data.discount,
         stock,
         stockType,
         images: uploadedUrls,
         genders: data.genders || [],
         color_id: data.color_id,
-        active: data.active !== undefined ? data.active : true, // Asegurar que active se envíe
+        active: data.active !== undefined ? data.active : true,
         description: data.description,
         installmentText: data.installmentText,
         withoutStock: data.withoutStock,
@@ -268,6 +291,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
       type_id: '',
       category_id: '',
       cost: '' as any,
+      cashPrice: '' as any,
+      listPricePercentage: 25,
       price: '' as any,
       discount: 0 as any,
       active: true,
@@ -502,8 +527,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   <FormItem>
                     <FormLabel>Costo</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
+                      <Input
+                        type="number"
                         step="0.01"
                         {...field}
                         onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
@@ -511,31 +536,7 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                           const value = e.target.value
                           field.onChange(value === '' ? '' : parseFloat(value) || 0)
                         }}
-                        placeholder="0.00" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Precio Lista (Tarjeta)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        {...field}
-                        onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          field.onChange(value === '' ? '' : parseFloat(value) || 0)
-                        }}
-                        placeholder="0.00" 
+                        placeholder="0.00"
                       />
                     </FormControl>
                     <FormMessage />
@@ -550,8 +551,8 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                   <FormItem>
                     <FormLabel>Precio Efectivo/Transferencia</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
+                      <Input
+                        type="number"
                         step="0.01"
                         {...field}
                         onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
@@ -559,11 +560,36 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
                           const value = e.target.value
                           field.onChange(value === '' ? '' : parseFloat(value) || 0)
                         }}
-                        placeholder="0.00 (Opcional)" 
+                        placeholder="0.00"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="listPricePercentage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>% Recargo Tarjeta/QR</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        {...field}
+                        value={field.value ?? 25}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(value === '' ? 25 : parseFloat(value) || 25)
+                        }}
+                        placeholder="25"
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
-                      Precio con descuento para pagos en efectivo o transferencia
+                      Porcentaje que se agrega al precio efectivo
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -572,24 +598,24 @@ export function CreateProductDialog({ open, onOpenChange }: CreateProductDialogP
 
               <FormField
                 control={form.control}
-                name="discount"
+                name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descuento (%)</FormLabel>
+                    <FormLabel>Precio Lista (Tarjeta/QR)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0" 
-                        max="100"
+                      <Input
+                        type="number"
+                        step="0.01"
                         {...field}
-                        onFocus={(e) => e.target.value === '0' && (e.target.value = '')}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          field.onChange(value === '' ? '' : parseFloat(value) || 0)
-                        }}
-                        placeholder="0" 
+                        value={field.value || ''}
+                        disabled
+                        className="bg-gray-100"
+                        placeholder="Calculado automáticamente"
                       />
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      Se calcula: Efectivo × (1 + %Recargo)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

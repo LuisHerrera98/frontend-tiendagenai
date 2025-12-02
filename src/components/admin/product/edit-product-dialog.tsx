@@ -40,6 +40,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
     price: '',
     cost: '',
     cashPrice: '',
+    listPricePercentage: '25',
     type_id: '',
     brand_id: '',
     gender_id: '',
@@ -158,6 +159,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
         price: product.price?.toString() || '',
         cost: product.cost?.toString() || '',
         cashPrice: product.cashPrice?.toString() || '',
+        listPricePercentage: product.listPricePercentage?.toString() || '25',
         type_id: product.type_id || '',
         brand_id: product.brand_id || '',
         category_id: product.category_id || '',
@@ -206,9 +208,9 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
   // Clean up invalid sizes when category changes
   useEffect(() => {
     if (!sizes || !formData.category_id) return
-    
+
     const allAvailableSizes = sizes.map(s => s._id)
-    
+
     setProductSizes(prev => {
       const cleanedSizes = { ...prev }
       Object.keys(cleanedSizes).forEach(sizeId => {
@@ -219,6 +221,17 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       return cleanedSizes
     })
   }, [formData.category_id, sizes])
+
+  // Auto-calculate price from cashPrice and listPricePercentage
+  useEffect(() => {
+    const cashPriceNum = parseFloat(formData.cashPrice) || 0
+    const percentageNum = parseFloat(formData.listPricePercentage) || 25
+
+    if (cashPriceNum > 0) {
+      const calculatedPrice = Math.round(cashPriceNum * (1 + percentageNum / 100))
+      setFormData(prev => ({ ...prev, price: calculatedPrice.toString() }))
+    }
+  }, [formData.cashPrice, formData.listPricePercentage])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -237,6 +250,7 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
       price: parseFloat(formData.price),
       cost: parseFloat(formData.cost),
       cashPrice: formData.cashPrice ? parseFloat(formData.cashPrice) : undefined,
+      listPricePercentage: parseFloat(formData.listPricePercentage) || 25,
       type_id: formData.type_id,
       brand_id: formData.brand_id,
       category_id: formData.category_id,
@@ -435,28 +449,42 @@ export function EditProductDialog({ open, onOpenChange, product }: EditProductDi
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Precio Lista (Tarjeta)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cashPrice">Precio Efectivo/Transferencia</Label>
+              <Label htmlFor="cashPrice">Precio Efectivo</Label>
               <Input
                 id="cashPrice"
                 type="number"
                 step="0.01"
                 value={formData.cashPrice}
                 onChange={(e) => setFormData({ ...formData, cashPrice: e.target.value })}
-                placeholder="Opcional"
+                required
               />
-              <p className="text-xs text-gray-500">Precio con descuento para pagos en efectivo o transferencia</p>
+              <p className="text-xs text-gray-500">Precio para pagos en efectivo o transferencia</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="listPricePercentage">% Recargo Lista</Label>
+              <Input
+                id="listPricePercentage"
+                type="number"
+                min="0"
+                max="100"
+                value={formData.listPricePercentage}
+                onChange={(e) => setFormData({ ...formData, listPricePercentage: e.target.value })}
+              />
+              <p className="text-xs text-gray-500">Porcentaje sobre precio efectivo</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Precio Lista (Tarjeta)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                value={formData.price}
+                disabled
+                className="bg-gray-100 cursor-not-allowed"
+              />
+              <p className="text-xs text-gray-500">Calculado automáticamente</p>
             </div>
 
             <div className="space-y-2">

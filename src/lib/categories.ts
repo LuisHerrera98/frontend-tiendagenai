@@ -15,14 +15,14 @@ export const categoryService = {
   },
 
   // Create category
-  create: async (name: string, parent_id?: string): Promise<Category> => {
-    const response = await api.post('/category', { name, parent_id })
+  create: async (name: string, parent_id?: string, order?: number): Promise<Category> => {
+    const response = await api.post('/category', { name, parent_id, order })
     return response.data
   },
 
   // Update category
-  update: async (id: string, name: string, parent_id?: string): Promise<Category> => {
-    const response = await api.patch(`/category/${id}`, { name, parent_id })
+  update: async (id: string, name: string, parent_id?: string, order?: number): Promise<Category> => {
+    const response = await api.patch(`/category/${id}`, { name, parent_id, order })
     return response.data
   },
 

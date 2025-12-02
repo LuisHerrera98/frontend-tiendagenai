@@ -47,6 +47,7 @@ export function CategoryList() {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-16">Orden</TableHead>
           <TableHead>Nombre</TableHead>
           <TableHead>Categoría Padre</TableHead>
           <TableHead>Productos</TableHead>
@@ -58,6 +59,9 @@ export function CategoryList() {
           const parentCategory = categories.find(c => c._id === category.parent_id)
           return (
             <TableRow key={category._id}>
+              <TableCell className="text-sm text-gray-500 text-center">
+                {category.order || '-'}
+              </TableCell>
               <TableCell className="font-medium">{category.name}</TableCell>
               <TableCell className="text-sm text-gray-600">
                 {parentCategory ? parentCategory.name : '-'}

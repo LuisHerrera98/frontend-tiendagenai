@@ -28,6 +28,7 @@ import {
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   parent_id: z.string().optional(),
+  order: z.string().optional(),
 })
 
 type CategoryFormData = z.infer<typeof categorySchema>
@@ -55,11 +56,15 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
     defaultValues: {
       name: '',
       parent_id: '',
+      order: '',
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: CategoryFormData) => categoryService.create(data.name, data.parent_id || undefined),
+    mutationFn: (data: CategoryFormData) => {
+      const order = data.order ? parseInt(data.order) : undefined
+      return categoryService.create(data.name, data.parent_id || undefined, order && order >= 1 ? order : undefined)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       onOpenChange(false)
@@ -127,6 +132,29 @@ export function CreateCategoryDialog({ open, onOpenChange }: CreateCategoryDialo
                         ))}
                       </select>
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="order"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Orden (opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min="1"
+                        placeholder="Sin orden"
+                        autoComplete="off"
+                      />
+                    </FormControl>
+                    <p className="text-xs text-gray-500">
+                      Número menor = aparece primero. Vacío = al final
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -11,6 +11,7 @@ export interface Product {
   cost: number
   price: number
   cashPrice?: number
+  listPricePercentage?: number
   discount: number
   active: boolean
   gender_id?: string
@@ -42,6 +43,7 @@ export interface Category {
   _id: string
   name: string
   parent_id?: string | null
+  order?: number
   productsCount?: number
   subcategories?: Category[]
   createdAt: string
@@ -95,6 +97,7 @@ export interface CreateProductDto {
   cost: number
   price: number
   cashPrice?: number
+  listPricePercentage?: number
   discount?: number
   active?: boolean
   gender?: 'hombre' | 'mujer' | 'unisex'
