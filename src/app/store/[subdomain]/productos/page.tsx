@@ -1,11 +1,11 @@
 'use client'
 
 import { useParams, useSearchParams } from 'next/navigation'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { StoreLayout } from '@/components/store/store-layout'
 import { ProductCard } from '@/components/store/product-card'
 import { api } from '@/lib/api'
-import { ChevronLeft, ChevronRight, Filter, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Filter, X, Search } from 'lucide-react'
 
 interface StoreData {
   id: string
@@ -68,7 +68,19 @@ function ProductsContent() {
     colors: [] as string[],
     brands: [] as string[]
   })
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const limit = 20
+
+  // Debounce para el buscador (500ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+      setCurrentPage(1) // Resetear a primera página al buscar
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   useEffect(() => {
     fetchStoreData()
@@ -79,10 +91,12 @@ function ProductsContent() {
     // Actualizar categoría cuando cambie la URL
     const categoryFromUrl = searchParams.get('category') || ''
     const categoryNameFromUrl = searchParams.get('categoryName') ? decodeURIComponent(searchParams.get('categoryName')!) : ''
-    
+
     setSelectedCategory(categoryFromUrl)
     setSelectedCategoryName(categoryNameFromUrl)
     setCurrentPage(1) // Resetear a la primera página cuando cambie la categoría
+    setSearchTerm('') // Limpiar búsqueda al cambiar de categoría
+    setDebouncedSearchTerm('')
   }, [searchParams])
 
   useEffect(() => {
@@ -93,9 +107,9 @@ function ProductsContent() {
   }, [selectedCategory])
 
   useEffect(() => {
-    // Llamar a fetchProducts cuando cambie la categoría, página o filtros
+    // Llamar a fetchProducts cuando cambie la categoría, página, filtros o búsqueda
     fetchProducts()
-  }, [selectedCategory, currentPage, selectedFilters])
+  }, [selectedCategory, currentPage, selectedFilters, debouncedSearchTerm])
 
   const fetchStoreData = async () => {
     try {
@@ -147,6 +161,10 @@ function ProductsContent() {
       if (selectedCategory) {
         params.append('category', selectedCategory)
       }
+      // Agregar término de búsqueda
+      if (debouncedSearchTerm.trim()) {
+        params.append('search', debouncedSearchTerm.trim())
+      }
       // Agregar filtros seleccionados
       if (selectedFilters.sizes.length > 0) {
         params.append('sizes', selectedFilters.sizes.join(','))
@@ -192,7 +210,7 @@ function ProductsContent() {
           <h1 className="text-xl sm:text-2xl font-bold uppercase">
             {selectedCategoryName || 'Nuestros Productos'}
           </h1>
-          
+
           {selectedCategory && (
             <button
               onClick={() => setShowFilterModal(true)}
@@ -208,6 +226,30 @@ function ProductsContent() {
             </button>
           )}
         </div>
+
+        {/* Buscador dentro de la categoría */}
+        {selectedCategory && (
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nombre, marca, modelo..."
+                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className={hideFilters ? "" : "flex flex-col lg:flex-row gap-8"}>
           {/* Filtros de categorías - Solo mostrar si no viene de vista simple */}
