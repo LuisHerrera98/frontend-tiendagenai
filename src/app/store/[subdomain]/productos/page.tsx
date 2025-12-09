@@ -40,6 +40,7 @@ interface FilterOptions {
   sizes: Array<{id: string, name: string}>
   colors: Array<{id: string, name: string}>
   brands: Array<{id: string, name: string}>
+  modelos: Array<{id: string, name: string}>
 }
 
 function ProductsContent() {
@@ -62,7 +63,7 @@ function ProductsContent() {
   const [totalPages, setTotalPages] = useState(1)
   const [hideFilters] = useState(shouldHideFilters)
   const [showFilterModal, setShowFilterModal] = useState(false)
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ sizes: [], colors: [], brands: [] })
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({ sizes: [], colors: [], brands: [], modelos: [] })
   const [selectedFilters, setSelectedFilters] = useState({
     sizes: [] as string[],
     colors: [] as string[],
@@ -70,6 +71,7 @@ function ProductsContent() {
   })
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [selectedModelo, setSelectedModelo] = useState<string>('')
   const limit = 20
 
   // Debounce para el buscador (500ms)
@@ -97,6 +99,7 @@ function ProductsContent() {
     setCurrentPage(1) // Resetear a la primera página cuando cambie la categoría
     setSearchTerm('') // Limpiar búsqueda al cambiar de categoría
     setDebouncedSearchTerm('')
+    setSelectedModelo('') // Limpiar modelo al cambiar de categoría
   }, [searchParams])
 
   useEffect(() => {
@@ -107,9 +110,9 @@ function ProductsContent() {
   }, [selectedCategory])
 
   useEffect(() => {
-    // Llamar a fetchProducts cuando cambie la categoría, página, filtros o búsqueda
+    // Llamar a fetchProducts cuando cambie la categoría, página, filtros, búsqueda o modelo
     fetchProducts()
-  }, [selectedCategory, currentPage, selectedFilters, debouncedSearchTerm])
+  }, [selectedCategory, currentPage, selectedFilters, debouncedSearchTerm, selectedModelo])
 
   const fetchStoreData = async () => {
     try {
@@ -144,7 +147,7 @@ function ProductsContent() {
         : subdomain
 
       const response = await api.get(`/public/filters/${targetSubdomain}/${selectedCategory}`)
-      setFilterOptions(response.data || { sizes: [], colors: [], brands: [] })
+      setFilterOptions(response.data || { sizes: [], colors: [], brands: [], modelos: [] })
     } catch (err) {
       console.error('Error fetching filter options:', err)
     }
@@ -164,6 +167,10 @@ function ProductsContent() {
       // Agregar término de búsqueda
       if (debouncedSearchTerm.trim()) {
         params.append('search', debouncedSearchTerm.trim())
+      }
+      // Agregar filtro de modelo
+      if (selectedModelo) {
+        params.append('modelo', selectedModelo)
       }
       // Agregar filtros seleccionados
       if (selectedFilters.sizes.length > 0) {
@@ -227,25 +234,76 @@ function ProductsContent() {
           )}
         </div>
 
-        {/* Buscador dentro de la categoría */}
+        {/* Buscador elegante */}
         {selectedCategory && (
           <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por nombre, marca, modelo..."
-                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
-              />
-              {searchTerm && (
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-gray-50 rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity" />
+              <div className="relative flex items-center bg-gray-50 rounded-full border border-gray-200 focus-within:border-gray-400 focus-within:bg-white focus-within:shadow-sm transition-all">
+                <Search className="ml-4 w-5 h-5 text-gray-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por nombre, marca, modelo..."
+                  className="w-full py-3 px-3 bg-transparent focus:outline-none text-gray-700 placeholder-gray-400"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="mr-3 p-1.5 hover:bg-gray-200 rounded-full transition-colors flex-shrink-0"
+                  >
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chips de Modelos - Estilo Mercado Libre */}
+        {selectedCategory && filterOptions.modelos && filterOptions.modelos.length > 0 && (
+          <div className="mb-4 -mx-4 px-4">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              {/* Chip "Todos" */}
+              <button
+                onClick={() => {
+                  setSelectedModelo('')
+                  setCurrentPage(1)
+                }}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  selectedModelo === ''
+                    ? 'bg-black text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                }`}
+              >
+                Todos
+              </button>
+              {/* Chips de modelos */}
+              {filterOptions.modelos.map((modelo) => (
                 <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  key={modelo.id}
+                  onClick={() => {
+                    setSelectedModelo(selectedModelo === modelo.name ? '' : modelo.name)
+                    setCurrentPage(1)
+                  }}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    selectedModelo === modelo.name
+                      ? 'bg-black text-white shadow-md'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  }`}
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  {modelo.name}
                 </button>
+              ))}
+              {/* Indicador de scroll si hay más elementos */}
+              {filterOptions.modelos.length > 3 && (
+                <div className="flex-shrink-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none" />
               )}
             </div>
           </div>
