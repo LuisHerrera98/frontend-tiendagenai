@@ -264,46 +264,48 @@ function ProductsContent() {
         {/* Chips de Modelos - Estilo Mercado Libre */}
         {selectedCategory && filterOptions.modelos && filterOptions.modelos.length > 0 && (
           <div className="mb-4 -mx-4 px-4">
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <style jsx>{`
-                div::-webkit-scrollbar {
-                  display: none;
-                }
-              `}</style>
-              {/* Chip "Todos" */}
-              <button
-                onClick={() => {
-                  setSelectedModelo('')
-                  setCurrentPage(1)
-                }}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedModelo === ''
-                    ? 'bg-black text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                }`}
-              >
-                Todos
-              </button>
-              {/* Chips de modelos */}
-              {filterOptions.modelos.map((modelo) => (
+            <div className="relative">
+              <div className="flex gap-2 overflow-x-auto pb-2 pr-8 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <style jsx>{`
+                  div::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
+                {/* Chip "Todos" */}
                 <button
-                  key={modelo.id}
                   onClick={() => {
-                    setSelectedModelo(selectedModelo === modelo.name ? '' : modelo.name)
+                    setSelectedModelo('')
                     setCurrentPage(1)
                   }}
                   className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    selectedModelo === modelo.name
+                    selectedModelo === ''
                       ? 'bg-black text-white shadow-md'
                       : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm'
                   }`}
                 >
-                  {modelo.name}
+                  Todos
                 </button>
-              ))}
-              {/* Indicador de scroll si hay más elementos */}
-              {filterOptions.modelos.length > 3 && (
-                <div className="flex-shrink-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none" />
+                {/* Chips de modelos */}
+                {filterOptions.modelos.map((modelo) => (
+                  <button
+                    key={modelo.id}
+                    onClick={() => {
+                      setSelectedModelo(selectedModelo === modelo.name ? '' : modelo.name)
+                      setCurrentPage(1)
+                    }}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      selectedModelo === modelo.name
+                        ? 'bg-black text-white shadow-md'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                  >
+                    {modelo.name}
+                  </button>
+                ))}
+              </div>
+              {/* Gradiente indicador de scroll */}
+              {filterOptions.modelos.length > 2 && (
+                <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-gray-50 via-gray-50/80 to-transparent pointer-events-none" />
               )}
             </div>
           </div>
